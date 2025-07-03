@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "./components/theme-provider";
 import { Navbar } from "./components/navbar";
 import "./globals.css";
+import AnimatedGrid from "./components/animated-grid";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,15 +30,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased relative`}
       >
-        {/* Repeating background image with opacity */}
+        {/* Animated grid as background */}
+        <AnimatedGrid className="fixed inset-0 -z-10 w-full h-full" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-            <Navbar />
-            {children}
+          <Navbar />
+          {children}
         </ThemeProvider>
       </body>
     </html>
