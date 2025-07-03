@@ -3,7 +3,7 @@ import { AspectRatio } from "../components/ui/aspect-ratio";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-12 pb-24 gap-12 sm:p-32 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col min-h-screen items-center justify-center p-2 pb-24 gap-18 sm:p-3 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[12px] items-center w-full max-w-5xl">
         <h1 className="text-center w-full text-6xl">Image Tools</h1>
         <p className="text-muted-foreground text-center w-full text-lg">
