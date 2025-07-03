@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { AspectRatio } from "../components/ui/aspect-ratio";
 
 export default function Home() {
@@ -10,7 +11,7 @@ export default function Home() {
           Use popular image tools in your browser, free, no sign-up required.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 w-full max-w-4xl mx-auto">
-          <div className="flex flex-col items-center">
+          <Link href="/bg-remover" className="flex flex-col items-center">
             <AspectRatio
               ratio={16 / 9}
               className="bg-muted rounded-lg overflow-hidden w-full"
@@ -26,8 +27,8 @@ export default function Home() {
             <span className="mt-3 text-base font-medium text-center">
               Background Remover
             </span>
-          </div>
-          <div className="flex flex-col items-center">
+          </Link>
+          <Link href="/sky-swap" className="flex flex-col items-center">
             <AspectRatio
               ratio={16 / 9}
               className="bg-muted rounded-lg overflow-hidden w-full"
@@ -43,8 +44,8 @@ export default function Home() {
             <span className="mt-3 text-base font-medium text-center">
               Sky Swap
             </span>
-          </div>
-          <div className="flex flex-col items-center">
+          </Link>
+          <Link href="/bg-changer" className="flex flex-col items-center">
             <AspectRatio
               ratio={16 / 9}
               className="bg-muted rounded-lg overflow-hidden w-full"
@@ -60,8 +61,8 @@ export default function Home() {
             <span className="mt-3 text-base font-medium text-center">
               Background Changer
             </span>
-          </div>
-          <div className="flex flex-col items-center">
+          </Link>
+          <Link href="/outpainting" className="flex flex-col items-center">
             <AspectRatio
               ratio={16 / 9}
               className="bg-muted rounded-lg overflow-hidden w-full"
@@ -77,7 +78,7 @@ export default function Home() {
             <span className="mt-3 text-base font-medium text-center">
               Outpainting
             </span>
-          </div>
+          </Link>
         </div>
       </main>
       <footer className="flex gap-[24px] flex-wrap items-center justify-center w-full mt-12">
