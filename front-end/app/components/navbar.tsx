@@ -5,11 +5,12 @@ import {
   NavigationMenuItem,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
+import { ModeToggle } from "./mode-toggle";
 
 export function Navbar() {
   return (
     <nav className="w-full flex justify-center py-4">
-      <NavigationMenu className="rounded-ful bg-zinc-900 shadow px-6 py-2 rounded-full">
+      <NavigationMenu className="dark:bg-zinc-800 bg-zinc-300 px-6 py-2 rounded-full drop-shadow-xl/50 drop-shadow-sky-500">
         <NavigationMenuList className="flex gap-x-2">
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
@@ -60,6 +61,9 @@ export function Navbar() {
                 Outpainting
               </Link>
             </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <ModeToggle />
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
