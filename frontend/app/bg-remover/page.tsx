@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DropZone from "../components/drop-zone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download, Download as DownloadIcon } from "lucide-react";
+import { Download, Download as DownloadIcon, X } from "lucide-react";
 import { 
   BackgroundRemovalAPI, 
   JobResponse, 
@@ -12,6 +12,14 @@ import {
   BatchJobResponse, 
   BatchJobStatus
 } from "@/lib/api";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi,
+} from "@/components/ui/carousel";
 
 interface ProcessedImage {
   url: string;
@@ -29,6 +37,62 @@ export default function BgRemoverPage() {
   const [resultImageUrl, setResultImageUrl] = useState<string>("");
   const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
   const [zipDownloadUrl, setZipDownloadUrl] = useState<string>("");
+  const [isCarouselOpen, setIsCarouselOpen] = useState<boolean>(false);
+  const [carouselIndex, setCarouselIndex] = useState<number>(0);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+
+  // Keyboard event handler for carousel
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (!isCarouselOpen || !carouselApi) return;
+      
+      if (e.key === 'Escape') {
+        closeCarousel();
+      } else if (e.key === 'ArrowRight') {
+        carouselApi.scrollNext();
+      } else if (e.key === 'ArrowLeft') {
+        carouselApi.scrollPrev();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isCarouselOpen, carouselApi]);
+
+  // Update carousel index when carousel API changes
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    const updateIndex = () => {
+      setCarouselIndex(carouselApi.selectedScrollSnap());
+    };
+
+    carouselApi.on('select', updateIndex);
+    return () => {
+      carouselApi.off('select', updateIndex);
+    };
+  }, [carouselApi]);
+
+  // Scroll to the selected index when carousel opens
+  useEffect(() => {
+    if (isCarouselOpen && carouselApi) {
+      carouselApi.scrollTo(carouselIndex);
+    }
+  }, [isCarouselOpen, carouselApi, carouselIndex]);
+
+  // Prevent body scroll when carousel is open
+  useEffect(() => {
+    if (isCarouselOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isCarouselOpen]);
 
   const handleRemoveBg = async () => {
     if (!files || files.length === 0) {
@@ -238,6 +302,15 @@ export default function BgRemoverPage() {
     }
   };
 
+  const openCarousel = (index: number) => {
+    setCarouselIndex(index);
+    setIsCarouselOpen(true);
+  };
+
+  const closeCarousel = () => {
+    setIsCarouselOpen(false);
+  };
+
   const renderResults = () => {
     // Single image result
     if (resultImageUrl && processedImages.length === 0) {
@@ -261,7 +334,10 @@ export default function BgRemoverPage() {
       return (
         <div className="mt-6 w-full max-w-6xl">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Processed Images ({processedImages.length})</h2>
+            <div>
+              <h2 className="text-xl font-semibold">Processed Images ({processedImages.length})</h2>
+              <p className="text-sm text-gray-500">Click on any image to view in carousel</p>
+            </div>
             {zipDownloadUrl && (
               <Button onClick={downloadAllAsZip} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
@@ -272,16 +348,19 @@ export default function BgRemoverPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {processedImages.map((image, index) => (
-              <Card key={image.jobId} className="relative">
+              <Card key={image.jobId} className="relative cursor-pointer hover:shadow-lg transition-shadow">
                 <Button
-                  onClick={() => downloadImage(image.url, image.filename)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadImage(image.url, image.filename);
+                  }}
                   size="sm"
                   variant="ghost"
                   className="absolute top-2 right-2 z-10 h-8 w-8 p-0 hover:bg-white/90 rounded-full shadow-sm"
                 >
                   <DownloadIcon className="h-4 w-4" />
                 </Button>
-                <CardContent className="p-4">
+                <CardContent className="p-4" onClick={() => openCarousel(index)}>
                   <img
                     src={image.url}
                     alt={`Processed ${index + 1}`}
@@ -321,6 +400,113 @@ export default function BgRemoverPage() {
     return null;
   };
 
+  const renderCarouselModal = () => {
+    if (!isCarouselOpen || processedImages.length === 0) return null;
+
+    const currentImage = processedImages[carouselIndex];
+
+    return (
+      <div 
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50"
+        onClick={closeCarousel}
+      >
+        <div 
+          className="relative w-full max-w-5xl max-h-[95vh] bg-background border rounded-lg shadow-2xl mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <Button
+            onClick={closeCarousel}
+            size="sm"
+            variant="ghost"
+            className="absolute top-4 right-4 z-20 h-8 w-8 p-0 hover:bg-accent rounded-full"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+          {/* Carousel */}
+          <div className="p-6">
+            <Carousel
+              setApi={setCarouselApi}
+              opts={{
+                align: "start",
+                startIndex: carouselIndex,
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent>
+                {processedImages.map((image, index) => (
+                  <CarouselItem key={image.jobId}>
+                    <div className="flex flex-col items-center">
+                      <img
+                        src={image.url}
+                        alt={`Processed ${index + 1}`}
+                        className="max-w-full max-h-[60vh] object-contain rounded-lg"
+                      />
+                      
+                      {/* Image info and actions */}
+                      <div className="mt-4 w-full flex justify-between items-center">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Image {index + 1} of {processedImages.length}
+                          </p>
+                          <p className="text-xs text-muted-foreground/70">Job ID: {image.jobId}</p>
+                        </div>
+                        <Button
+                          onClick={() => downloadImage(image.url, image.filename)}
+                          className="flex items-center gap-2"
+                        >
+                          <DownloadIcon className="h-4 w-4" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              
+              {processedImages.length > 1 && (
+                <>
+                  <CarouselPrevious className="left-4" />
+                  <CarouselNext className="right-4" />
+                </>
+              )}
+            </Carousel>
+
+            {/* Thumbnail strip for navigation */}
+            {processedImages.length > 1 && (
+              <div className="border-t mt-6 pt-4">
+                <div className="flex gap-2 justify-center overflow-x-auto max-w-full">
+                  {processedImages.map((image, index) => (
+                    <button
+                      key={image.jobId}
+                      onClick={() => {
+                        setCarouselIndex(index);
+                        carouselApi?.scrollTo(index);
+                      }}
+                      className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all ${
+                        index === carouselIndex 
+                          ? 'border-primary ring-2 ring-primary/20' 
+                          : 'border-border hover:border-muted-foreground/50'
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full w-full items-center justify-center p-4">
       <h1 className="text-2xl font-bold p-8">Background Remover</h1>
@@ -353,6 +539,7 @@ export default function BgRemoverPage() {
       )}
       
       {renderResults()}
+      {renderCarouselModal()}
     </div>
   );
 }
