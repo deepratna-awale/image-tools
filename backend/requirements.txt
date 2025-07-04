@@ -1,0 +1,6 @@
+fastapi
+rembg
+aio_pika
+onnxruntime
+python-multipart
+uvicorn
