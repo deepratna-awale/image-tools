@@ -27,6 +27,7 @@ export default function HealthCheck() {
         setError("Backend not responding");
       }
     } catch (err) {
+      console.error('Health check error:', err);
       setError("Failed to connect to backend");
     }
   };

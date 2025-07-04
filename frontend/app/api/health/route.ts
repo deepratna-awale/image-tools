@@ -16,6 +16,7 @@ export async function GET() {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
+    console.error('Health check failed:', error);
     return NextResponse.json(
       { error: "Failed to connect to backend" },
       { status: 503 }
