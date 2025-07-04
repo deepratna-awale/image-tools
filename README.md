@@ -8,6 +8,7 @@ AI-powered image processing platform with background removal, background changin
 - **Background Changing**: Replace backgrounds with custom images or colors
 - **Sky Replacement**: Change sky in landscape photos
 - **Outpainting**: Extend images beyond their original boundaries
+- **Batch Processing**: Process up to 10 images simultaneously with individual and bulk download options
 - **Queue-based Processing**: Scalable job processing with RabbitMQ
 - **Real-time Status Updates**: Track processing progress in real-time
 - **Multiple Storage Options**: Local filesystem and AWS S3 support
@@ -180,28 +181,68 @@ BACKEND_URL=http://localhost:8000
 ### Background Removal
 
 1. Navigate to `/bg-remover`
-2. Upload an image using drag & drop
+2. Upload image(s) using drag & drop (supports up to 10 images)
 3. Choose processing mode:
-   - **Queue-based**: Submit job and monitor progress
+   - **Queue-based**: Submit job(s) and monitor progress
    - **Direct**: Process immediately
-4. Download the processed image
+4. For single images: Download the processed image
+5. For multiple images: View results in a 5-column grid layout with individual download buttons
+6. Download all processed images as a ZIP file using "Download All" button
+
+#### Single Image Processing
+- Upload one image
+- Processing happens as before with the same interface
+
+#### Batch Processing (2-10 images)
+- Upload multiple images (up to 10)
+- Images are displayed in a grid preview
+- Processing happens for all images simultaneously
+- Results are shown in a 5-column, 2-row grid layout
+- Each image has its own download button
+- "Download All (ZIP)" button downloads all processed images as a zip file
 
 ### API Usage
 
 ```bash
-# Submit a background removal job
+# Submit a single background removal job
 curl -X POST \
   -F "file=@your-image.jpg" \
   http://localhost:8000/api/v1/background-removal/process
 
+# Submit a batch background removal job
+curl -X POST \
+  -F "files=@image1.jpg" \
+  -F "files=@image2.jpg" \
+  -F "files=@image3.jpg" \
+  http://localhost:8000/api/v1/background-removal/process-batch
+
 # Check job status
 curl http://localhost:8000/api/v1/background-removal/status/{job_id}
 
-# Download result
+# Check batch job status
+curl http://localhost:8000/api/v1/background-removal/batch-status/{batch_id}
+
+# Download single result
 curl http://localhost:8000/api/v1/background-removal/result/{job_id} \
   -o processed-image.png
-```
 
+# Download batch results as ZIP
+curl http://localhost:8000/api/v1/background-removal/batch-results/{batch_id} \
+  -o batch-results.zip
+
+# Process single image directly
+curl -X POST \
+  -F "file=@your-image.jpg" \
+  http://localhost:8000/api/v1/background-removal/process-direct \
+  -o result.png
+
+# Process batch directly (returns ZIP)
+curl -X POST \
+  -F "files=@image1.jpg" \
+  -F "files=@image2.jpg" \
+  http://localhost:8000/api/v1/background-removal/process-batch-direct \
+  -o batch-results.zip
+```
 ## 🔄 Workflow
 
 ### Job Processing Flow

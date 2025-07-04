@@ -1,16 +1,19 @@
 import asyncio
 import logging
 import os
-from typing import Optional, Dict, Any
+import zipfile
+import io
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
-from core.models.job import Job, ServiceType, JobStatus, JobResult
+from core.models.job import Job, ServiceType, JobStatus, JobResult, BatchJob, BatchJobResult
 from core.messaging.queue_manager import QueueManager
 from core.messaging.rabbitmq_adapter import RabbitMQAdapter
 from core.messaging.sqs_adapter import SQSAdapter
 from core.storage.storage_manager import StorageManager
 from core.storage.local_storage import LocalStorage
 from core.storage.s3_storage import S3Storage
+from core.batch_tracker import BatchJobTracker
 from config.settings import settings
 from .processor import BackgroundRemovalProcessor
 
@@ -36,8 +39,13 @@ class BackgroundRemovalService:
         # Initialize processor
         self.processor = BackgroundRemovalProcessor()
         
+        # Initialize batch tracker for persistent storage
+        self.batch_tracker = BatchJobTracker(settings.local_storage_path)
+        
         # In-memory job tracking (use Redis in production)
         self.jobs: Dict[str, JobResult] = {}
+        self.batch_jobs: Dict[str, BatchJobResult] = {}
+        self.job_to_batch_mapping: Dict[str, str] = {}
         
         # Initialize connections
         self._initialized = False
@@ -47,7 +55,272 @@ class BackgroundRemovalService:
         if not self._initialized:
             await self.queue_manager.connect()
             self._initialized = True
-    
+
+    async def submit_batch_job(self, files_data: List[tuple[bytes, str]]) -> BatchJob:
+        """Submit a batch of background removal jobs"""
+        await self._ensure_initialized()
+        
+        if len(files_data) > 10:
+            raise ValueError("Maximum 10 files allowed per batch")
+        
+        try:
+            # Create batch job
+            batch_job = BatchJob(
+                service_type=ServiceType.BACKGROUND_REMOVAL,
+                total_files=len(files_data)
+            )
+            
+            # Create individual jobs for each file
+            individual_jobs = []
+            for file_content, filename in files_data:
+                # Upload file to storage
+                file_path = await self.storage_manager.upload_file(
+                    file_content, 
+                    f"batch_{batch_job.batch_id}_{filename}",
+                    "image/jpeg"
+                )
+                
+                # Create individual job
+                job = Job(
+                    service_type=ServiceType.BACKGROUND_REMOVAL,
+                    input_file_path=file_path,
+                    status=JobStatus.QUEUED,
+                    parameters={"batch_id": batch_job.batch_id}
+                )
+                
+                individual_jobs.append(job)
+                
+                # Store individual job info with batch_id reference
+                self.jobs[job.job_id] = JobResult(
+                    job_id=job.job_id,
+                    status=job.status,
+                    service_type=job.service_type,
+                    created_at=job.created_at
+                )
+                
+                # Send individual job to queue
+                await self.queue_manager.send_job(job)
+            
+            # Update batch job with individual jobs
+            batch_job.jobs = individual_jobs
+            
+            # Store batch job info with job IDs mapping
+            self.batch_jobs[batch_job.batch_id] = BatchJobResult(
+                batch_id=batch_job.batch_id,
+                status=batch_job.status,
+                service_type=batch_job.service_type,
+                total_files=batch_job.total_files,
+                completed_files=0,
+                failed_files=0,
+                progress=0.0,
+                created_at=batch_job.created_at,
+                results=[]
+            )
+            
+            # Store mapping of job IDs to batch ID for easier lookup
+            if not hasattr(self, 'job_to_batch_mapping'):
+                self.job_to_batch_mapping = {}
+            
+            for job in individual_jobs:
+                self.job_to_batch_mapping[job.job_id] = batch_job.batch_id
+            
+            # Persist batch information to file for cross-process access
+            job_ids = [job.job_id for job in individual_jobs]
+            self.batch_tracker.save_batch_info(batch_job.batch_id, job_ids, batch_job.total_files)
+            
+            logger.info(f"Batch background removal job {batch_job.batch_id} submitted with {len(files_data)} files")
+            return batch_job
+            
+        except Exception as e:
+            logger.error(f"Error submitting batch background removal job: {e}")
+            raise
+
+    async def get_batch_job_status(self, batch_id: str) -> Optional[BatchJobResult]:
+        """Get batch job status using persistent storage"""
+        # Get batch info from persistent storage
+        batch_info = self.batch_tracker.get_batch_info(batch_id)
+        if not batch_info:
+            return None
+        
+        # Get batch result from memory or create new one
+        batch_result = self.batch_jobs.get(batch_id)
+        if not batch_result:
+            batch_result = BatchJobResult(
+                batch_id=batch_id,
+                status=JobStatus.QUEUED,
+                service_type=ServiceType.BACKGROUND_REMOVAL,
+                total_files=batch_info["total_files"],
+                completed_files=0,
+                failed_files=0,
+                progress=0.0,
+                created_at=datetime.fromisoformat(batch_info["created_at"]),
+                results=[]
+            )
+            self.batch_jobs[batch_id] = batch_result
+        
+        # Get job IDs for this batch from persistent storage
+        batch_job_ids = self.batch_tracker.get_batch_job_ids(batch_id)
+        if not batch_job_ids:
+            logger.warning(f"No job IDs found for batch {batch_id}")
+            return batch_result
+        
+        completed_count = 0
+        failed_count = 0
+        results = []
+        
+        # Check each job status from persistent storage
+        for job_id in batch_job_ids:
+            # Get job status from persistent storage
+            job_status_info = self.batch_tracker.get_job_status(job_id)
+            
+            if job_status_info:
+                status = JobStatus(job_status_info.get("status", "queued"))
+                
+                if status == JobStatus.COMPLETED:
+                    job_result = JobResult(
+                        job_id=job_id,
+                        status=status,
+                        service_type=ServiceType.BACKGROUND_REMOVAL,
+                        output_url=job_status_info.get("output_url"),
+                        processing_time=job_status_info.get("processing_time"),
+                        created_at=datetime.utcnow(),  # We could store this too
+                        completed_at=datetime.fromisoformat(job_status_info["completed_at"]) if job_status_info.get("completed_at") else None
+                    )
+                    completed_count += 1
+                    results.append(job_result)
+                    logger.debug(f"Found completed job {job_id} for batch {batch_id}")
+                    
+                elif status == JobStatus.FAILED:
+                    job_result = JobResult(
+                        job_id=job_id,
+                        status=status,
+                        service_type=ServiceType.BACKGROUND_REMOVAL,
+                        error_message=job_status_info.get("error_message"),
+                        created_at=datetime.utcnow()
+                    )
+                    failed_count += 1
+                    results.append(job_result)
+                    logger.debug(f"Found failed job {job_id} for batch {batch_id}")
+                    
+                elif status == JobStatus.PROCESSING:
+                    job_result = JobResult(
+                        job_id=job_id,
+                        status=status,
+                        service_type=ServiceType.BACKGROUND_REMOVAL,
+                        created_at=datetime.utcnow()
+                    )
+                    results.append(job_result)
+                    logger.debug(f"Found processing job {job_id} for batch {batch_id}")
+                    
+                else:  # QUEUED
+                    job_result = JobResult(
+                        job_id=job_id,
+                        status=status,
+                        service_type=ServiceType.BACKGROUND_REMOVAL,
+                        created_at=datetime.utcnow()
+                    )
+                    results.append(job_result)
+            else:
+                # No status info found, assume queued
+                job_result = JobResult(
+                    job_id=job_id,
+                    status=JobStatus.QUEUED,
+                    service_type=ServiceType.BACKGROUND_REMOVAL,
+                    created_at=datetime.utcnow()
+                )
+                results.append(job_result)
+        
+        # Update batch job status
+        batch_result.completed_files = completed_count
+        batch_result.failed_files = failed_count
+        batch_result.progress = ((completed_count + failed_count) / batch_result.total_files) * 100 if batch_result.total_files > 0 else 0
+        batch_result.results = results
+        
+        # Update overall status
+        total_processed = completed_count + failed_count
+        if total_processed >= batch_result.total_files:
+            if failed_count == batch_result.total_files:
+                batch_result.status = JobStatus.FAILED
+            else:
+                batch_result.status = JobStatus.COMPLETED
+                if batch_result.completed_at is None:
+                    batch_result.completed_at = datetime.utcnow()
+                
+                # Always try to create zip file when batch is completed and we have results
+                if completed_count > 0 and not batch_result.zip_url:
+                    try:
+                        batch_result.zip_url = await self._create_results_zip(batch_id, results)
+                        logger.info(f"Created zip file for batch {batch_id}: {batch_result.zip_url}")
+                    except Exception as e:
+                        logger.error(f"Failed to create zip file for batch {batch_id}: {e}")
+        elif total_processed > 0:
+            batch_result.status = JobStatus.PROCESSING
+        
+        logger.info(f"Batch {batch_id} status: {batch_result.status}, completed: {completed_count}/{batch_result.total_files}, failed: {failed_count}, progress: {batch_result.progress:.1f}%")
+        return batch_result
+
+    async def _create_results_zip(self, batch_id: str, results: List[JobResult]) -> Optional[str]:
+        """Create a zip file containing all completed results"""
+        try:
+            zip_buffer = io.BytesIO()
+            
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for i, result in enumerate(results):
+                    if result.status == JobStatus.COMPLETED and result.output_url:
+                        try:
+                            # Download result file
+                            file_data = await self.storage_manager.download_file(result.output_url)
+                            if file_data:
+                                # Add to zip with a proper filename
+                                filename = f"processed_image_{i+1}.png"
+                                zip_file.writestr(filename, file_data)
+                        except Exception as e:
+                            logger.warning(f"Failed to add result {result.job_id} to zip: {e}")
+            
+            zip_buffer.seek(0)
+            
+            # Upload zip file to storage
+            zip_path = await self.storage_manager.upload_result_file(
+                zip_buffer.getvalue(),
+                f"batch_results_{batch_id}.zip",
+                "application/zip"
+            )
+            
+            return zip_path
+            
+        except Exception as e:
+            logger.error(f"Error creating results zip for batch {batch_id}: {e}")
+            return None
+
+    async def get_batch_results_zip(self, batch_id: str) -> Optional[bytes]:
+        """Get the zip file containing all batch results"""
+        batch_result = self.batch_jobs.get(batch_id)
+        if not batch_result or not batch_result.zip_url:
+            return None
+        
+        try:
+            return await self.storage_manager.download_file(batch_result.zip_url)
+        except Exception as e:
+            logger.error(f"Error downloading batch results zip: {e}")
+            return None
+
+    async def process_batch_direct(self, files_data: List[tuple[bytes, str]]) -> List[bytes]:
+        """Process multiple images directly without queueing"""
+        if len(files_data) > 10:
+            raise ValueError("Maximum 10 files allowed per batch")
+        
+        results = []
+        for file_content, filename in files_data:
+            try:
+                result_data = await self.processor.process(file_content)
+                results.append(result_data)
+            except Exception as e:
+                logger.error(f"Error processing {filename}: {e}")
+                # Add None for failed processing
+                results.append(None)
+        
+        return results
+
     async def submit_job(self, file_content: bytes, filename: str = None) -> Job:
         """Submit a background removal job"""
         await self._ensure_initialized()
@@ -158,9 +431,12 @@ class BackgroundRemovalService:
     async def process_job(self, job: Job) -> None:
         """Process a background removal job (called by worker)"""
         try:
-            # Update job status
+            # Update job status to processing (both in-memory and persistent)
             if job.job_id in self.jobs:
                 self.jobs[job.job_id].status = JobStatus.PROCESSING
+            self.batch_tracker.update_job_status(job.job_id, JobStatus.PROCESSING.value)
+            
+            logger.info(f"Starting processing job {job.job_id}")
             
             # Download input file
             input_data = await self.storage_manager.download_file(job.input_file_path)
@@ -177,22 +453,38 @@ class BackgroundRemovalService:
                 "image/png"
             )
             
-            # Update job status
+            # Update job status to completed (both in-memory and persistent)
+            completed_at = datetime.utcnow()
             if job.job_id in self.jobs:
                 self.jobs[job.job_id].status = JobStatus.COMPLETED
                 self.jobs[job.job_id].output_url = result_path
                 self.jobs[job.job_id].processing_time = processing_time
-                self.jobs[job.job_id].completed_at = datetime.utcnow()
+                self.jobs[job.job_id].completed_at = completed_at
+            
+            # Persist job completion
+            self.batch_tracker.update_job_status(
+                job.job_id, 
+                JobStatus.COMPLETED.value,
+                output_url=result_path,
+                processing_time=processing_time,
+                completed_at=completed_at.isoformat()
+            )
             
             logger.info(f"Background removal job {job.job_id} completed in {processing_time:.2f}s")
             
         except Exception as e:
             logger.error(f"Error processing background removal job {job.job_id}: {e}")
             
-            # Update job status to failed
+            # Update job status to failed (both in-memory and persistent)
             if job.job_id in self.jobs:
                 self.jobs[job.job_id].status = JobStatus.FAILED
                 self.jobs[job.job_id].error_message = str(e)
+            
+            self.batch_tracker.update_job_status(
+                job.job_id, 
+                JobStatus.FAILED.value,
+                error_message=str(e)
+            )
             
             raise
     

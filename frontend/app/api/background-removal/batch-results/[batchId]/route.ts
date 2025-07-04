@@ -1,0 +1,38 @@
+import { NextRequest, NextResponse } from "next/server";
+
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { batchId: string } }
+) {
+  try {
+    const { batchId } = await params;
+    
+    const backendRes = await fetch(`${BACKEND_URL}/api/v1/background-removal/batch-results/${batchId}`);
+    
+    if (!backendRes.ok) {
+      const errorText = await backendRes.text();
+      return NextResponse.json(
+        { error: `Backend error: ${errorText}` },
+        { status: backendRes.status }
+      );
+    }
+
+    // Return the zip file as a stream
+    const zipBlob = await backendRes.blob();
+    return new NextResponse(zipBlob, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename=batch_results_${batchId}.zip`,
+      },
+    });
+    
+  } catch (error) {
+    console.error('Batch results API route error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
