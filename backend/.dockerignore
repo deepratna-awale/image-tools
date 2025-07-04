@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+README.md
+.env
+.env.*
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache
+.coverage
+.tox
+.venv
+venv/
+.mypy_cache
+
+# Uploads and storage
+uploads/
+test_uploads/
+storage/
+results/
+
+# Logs
+*.log
+logs/
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*.py
+tests/
+conftest.py
+
+# Documentation
+docs/
+*.md
+!requirements.txt
+
+# Development scripts
+start.sh
+start-worker.sh
+verify_setup.py
+
+# Docker files (to avoid recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Temporary files
+temp/
+tmp/
+.temp/

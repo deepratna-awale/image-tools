@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # API Service
+  api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+      target: development
+    ports:
+      - "8000:8000"
+    environment:
+      - QUEUE_TYPE=rabbitmq
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - STORAGE_TYPE=local
+      - LOCAL_STORAGE_PATH=/app/storage
+      - DEBUG=true
+    volumes:
+      - ../..:/app
+      - storage_data:/app/storage
+    depends_on:
+      - rabbitmq
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Worker Service
+  worker:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+      target: development
+    environment:
+      - QUEUE_TYPE=rabbitmq
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - STORAGE_TYPE=local
+      - LOCAL_STORAGE_PATH=/app/storage
+    volumes:
+      - ../..:/app
+      - storage_data:/app/storage
+    depends_on:
+      - rabbitmq
+    command: python -m workers.image_processor
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # Redis (for production job storage)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  storage_data:
+  rabbitmq_data:
+  redis_data:

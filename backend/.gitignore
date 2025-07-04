@@ -208,3 +208,47 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project-specific
+# Uploaded files and results
+uploads/*
+!uploads/.gitkeep
+uploads/uploads/*
+!uploads/uploads/.gitkeep
+uploads/results/*
+!uploads/results/.gitkeep
+test_uploads/*
+!test_uploads/.gitkeep
+storage/*
+
+# Temporary test files
+test_*.py
+temp_*
+
+# Local configuration overrides
+.env.local
+.env.*.local
+
+# Log files
+*.log
+logs/
+
+# Model files (if any ML models are downloaded)
+models/
+*.pth
+*.pkl
+*.joblib
+
+# Database files (if using SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis dump files
+dump.rdb
+
+# RabbitMQ data
+rabbitmq_data/
+
+# Docker volumes
+docker_data/
