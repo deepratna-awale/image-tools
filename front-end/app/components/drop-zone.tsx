@@ -7,12 +7,19 @@ import {
   DropzoneEmptyState,
 } from "@/components/ui/shadcn-io/dropzone";
 
-const DropZone = () => {
+interface DropZoneProps {
+  onFilesChange?: (files: File[]) => void;
+}
+
+const DropZone = ({ onFilesChange }: DropZoneProps) => {
   const [files, setFiles] = useState<File[] | undefined>();
 
   const handleDrop = (files: File[]) => {
     console.log(files);
     setFiles(files);
+    if (onFilesChange) {
+      onFilesChange(files);
+    }
   };
 
   return (
