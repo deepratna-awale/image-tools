@@ -37,3 +37,44 @@ next-env.d.ts
 
 # Apple
 .DS_Store
+
+# Project-specific workspace files
+# Uploaded files and results (workspace level)
+uploads/
+results/
+storage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and Editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+temp/
+tmp/
+.temp/
+
+# Docker volumes and data
+docker_data/
+rabbitmq_data/
+redis_data/
+
+# Python cache (if any scripts at root level)
+__pycache__/
+*.pyc
+
+# Node modules (if any scripts at root level)
+node_modules/

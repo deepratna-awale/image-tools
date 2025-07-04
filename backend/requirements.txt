@@ -1,6 +1,2 @@
-fastapi
-rembg
-aio_pika
-onnxruntime
-python-multipart
-uvicorn
+# Use base requirements for now
+-r requirements/base.txt
