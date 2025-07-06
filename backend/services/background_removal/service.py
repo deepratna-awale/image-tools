@@ -304,22 +304,7 @@ class BackgroundRemovalService:
             logger.error(f"Error downloading batch results zip: {e}")
             return None
 
-    async def process_batch_direct(self, files_data: List[tuple[bytes, str]]) -> List[bytes]:
-        """Process multiple images directly without queueing"""
-        if len(files_data) > 10:
-            raise ValueError("Maximum 10 files allowed per batch")
-        
-        results = []
-        for file_content, filename in files_data:
-            try:
-                result_data = await self.processor.process(file_content)
-                results.append(result_data)
-            except Exception as e:
-                logger.error(f"Error processing {filename}: {e}")
-                # Add None for failed processing
-                results.append(None)
-        
-        return results
+
 
     async def submit_job(self, file_content: bytes, filename: str = None) -> Job:
         """Submit a background removal job"""
@@ -424,9 +409,7 @@ class BackgroundRemovalService:
         
         return None
     
-    async def process_direct(self, file_content: bytes) -> bytes:
-        """Process image directly without queueing"""
-        return await self.processor.process(file_content)
+
     
     async def process_job(self, job: Job) -> None:
         """Process a background removal job (called by worker)"""

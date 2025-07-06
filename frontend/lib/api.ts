@@ -125,39 +125,5 @@ export class BackgroundRemovalAPI {
     return response.blob();
   }
 
-  static async processDirectly(file: File): Promise<Blob> {
-    const formData = new FormData();
-    formData.append("file", file);
 
-    const response = await fetch("/api/remove-background-direct", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to process image");
-    }
-
-    return response.blob();
-  }
-
-  static async processBatchDirectly(files: File[]): Promise<Blob> {
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
-
-    const response = await fetch("/api/remove-background-batch-direct", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to process batch");
-    }
-
-    return response.blob();
-  }
 }

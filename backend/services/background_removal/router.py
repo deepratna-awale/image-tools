@@ -44,6 +44,8 @@ async def queue_background_removal(file: UploadFile = File(...)):
             service_type=job.service_type
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error queuing background removal job: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -92,29 +94,7 @@ async def get_job_result(job_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/process-direct")
-async def process_direct(file: UploadFile = File(...)):
-    """Process background removal directly without queueing"""
-    try:
-        # Validate file
-        if not file.content_type or not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="File must be an image")
-        
-        # Read file content
-        file_content = await file.read()
-        
-        # Process directly
-        result_data = await bg_service.process_direct(file_content)
-        
-        return StreamingResponse(
-            io.BytesIO(result_data),
-            media_type="image/png",
-            headers={"Content-Disposition": f"attachment; filename=processed_direct.png"}
-        )
-        
-    except Exception as e:
-        logger.error(f"Error in direct processing: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get("/stats")
@@ -160,6 +140,8 @@ async def queue_batch_background_removal(files: List[UploadFile] = File(...)):
             job_ids=[job.job_id for job in batch_job.jobs]
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error queuing batch background removal job: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -213,44 +195,4 @@ async def download_batch_results(batch_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/process-batch-direct")
-async def process_batch_direct(files: List[UploadFile] = File(...)):
-    """Process multiple images directly without queueing, returning individual images"""
-    try:
-        # Validate files
-        if len(files) > 10:
-            raise HTTPException(status_code=400, detail="Maximum 10 files allowed per batch")
-        
-        files_data = []
-        for file in files:
-            if not file.content_type or not file.content_type.startswith('image/'):
-                raise HTTPException(status_code=400, detail="All files must be images")
-            
-            file_content = await file.read()
-            files_data.append((file_content, file.filename or f"image_{uuid.uuid4()}.jpg"))
-        
-        # Process all images
-        results = await bg_service.process_batch_direct(files_data)
-        
-        # Create a zip file with all results
-        zip_buffer = io.BytesIO()
-        import zipfile
-        
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for i, (result_data, (_, filename)) in enumerate(zip(results, files_data)):
-                if result_data is not None:
-                    base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
-                    result_filename = f"{base_name}_processed.png"
-                    zip_file.writestr(result_filename, result_data)
-        
-        zip_buffer.seek(0)
-        
-        return StreamingResponse(
-            zip_buffer,
-            media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename=batch_processed_direct.zip"}
-        )
-        
-    except Exception as e:
-        logger.error(f"Error in batch direct processing: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+

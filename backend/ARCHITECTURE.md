@@ -1,10 +1,10 @@
-# Image Processing Backend - Restructured Architecture
+# Image Processing Backend - Architecture
 
 ## Current Features
-- ✅ Background Removal
-- 🔄 Background Changing
-- 🔄 Sky Change  
-- 🔄 Outpainting
+- ✅ Background Removal with batch processing (up to 10 images)
+- 🔄 Background Changing (planned)
+- 🔄 Sky Replacement (planned)
+- 🔄 Outpainting (planned)
 
 ## Architecture Overview
 
@@ -113,16 +113,33 @@ backend/
 
 ## Benefits of This Architecture
 
-1. **Modularity**: Each service is independent
-2. **Scalability**: Services can be scaled individually
-3. **Maintainability**: Clear separation of concerns
+1. **Modularity**: Each service is independent and can be deployed separately
+2. **Scalability**: Services can be scaled individually based on demand
+3. **Maintainability**: Clear separation of concerns makes code easier to maintain
 4. **Testability**: Each component can be tested in isolation
-5. **AWS-Ready**: Easy to deploy on various AWS services
-6. **Future-Proof**: Easy to add new AI services
+5. **AWS-Ready**: Designed for easy deployment on AWS services (ECS, SQS, S3)
+6. **Queue-Based**: All processing is asynchronous and scalable
+7. **Batch Support**: Efficient handling of multiple images simultaneously
 
-## Migration Strategy
+## Implementation Status
 
-1. **Phase 1**: Restructure existing background removal service
-2. **Phase 2**: Add shared core components
-3. **Phase 3**: Implement remaining AI services
-4. **Phase 4**: AWS deployment and optimization
+### ✅ Completed
+- Background removal service with queue-based processing
+- Batch processing support (up to 10 images)
+- Modular service architecture
+- RabbitMQ/SQS queue abstraction
+- Local/S3 storage abstraction
+- Comprehensive test suite
+- Docker deployment configuration
+- AWS deployment templates
+
+### 🔄 In Progress
+- Additional AI services (background changing, sky replacement, outpainting)
+- Enhanced error handling and monitoring
+- Performance optimizations
+
+### 📋 Planned
+- Redis integration for shared state
+- WebSocket real-time notifications
+- Advanced authentication and authorization
+- Kubernetes deployment options
