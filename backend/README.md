@@ -4,7 +4,8 @@ A scalable, queue-based image processing API built with FastAPI, designed for AW
 
 ## Features
 
-- ✅ **Background Removal** - Remove backgrounds from images using AI
+- ✅ **Background Removal** - Remove backgrounds from images using AI (queue-based processing)
+- ✅ **Batch Processing** - Process up to 10 images simultaneously
 - 🔄 **Background Changing** - Replace image backgrounds (coming soon)
 - 🔄 **Sky Replacement** - Replace skies in landscape images (coming soon)
 - 🔄 **Outpainting** - Extend images beyond their borders (coming soon)
@@ -69,11 +70,19 @@ curl "http://localhost:8000/api/v1/background-removal/status/{job_id}"
 curl "http://localhost:8000/api/v1/background-removal/result/{job_id}" \
      --output processed_image.png
 
-# Process directly (no queue)
-curl -X POST "http://localhost:8000/api/v1/background-removal/process-direct" \
+# Submit batch job
+curl -X POST "http://localhost:8000/api/v1/background-removal/process-batch" \
+     -H "accept: application/json" \
      -H "Content-Type: multipart/form-data" \
-     -F "file=@your_image.jpg" \
-     --output result.png
+     -F "files=@image1.jpg" \
+     -F "files=@image2.jpg"
+
+# Check batch status  
+curl "http://localhost:8000/api/v1/background-removal/batch-status/{batch_id}"
+
+# Download batch results as ZIP
+curl "http://localhost:8000/api/v1/background-removal/batch-results/{batch_id}" \
+     --output batch_results.zip
 ```
 
 ## Project Structure

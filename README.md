@@ -4,15 +4,15 @@ AI-powered image processing platform with background removal, background changin
 
 ## 🚀 Features
 
-- **Background Removal**: Remove backgrounds from images using AI models
-- **Background Changing**: Replace backgrounds with custom images or colors
-- **Sky Replacement**: Change sky in landscape photos
-- **Outpainting**: Extend images beyond their original boundaries
-- **Batch Processing**: Process up to 10 images simultaneously with individual and bulk download options
-- **Queue-based Processing**: Scalable job processing with RabbitMQ
+- **Background Removal**: Remove backgrounds from images using AI models ✅
+- **Background Changing**: Replace backgrounds with custom images or colors 🔄
+- **Sky Replacement**: Change sky in landscape photos 🔄  
+- **Outpainting**: Extend images beyond their original boundaries 🔄
+- **Batch Processing**: Process up to 10 images simultaneously with ZIP download
+- **Queue-based Processing**: Scalable job processing with RabbitMQ/SQS
 - **Real-time Status Updates**: Track processing progress in real-time
 - **Multiple Storage Options**: Local filesystem and AWS S3 support
-- **Docker Support**: Containerized deployment ready
+- **AWS Ready**: ECS Fargate deployment configurations included
 
 ## 🏗️ Architecture
 
@@ -182,22 +182,20 @@ BACKEND_URL=http://localhost:8000
 
 1. Navigate to `/bg-remover`
 2. Upload image(s) using drag & drop (supports up to 10 images)
-3. Choose processing mode:
-   - **Queue-based**: Submit job(s) and monitor progress
-   - **Direct**: Process immediately
-4. For single images: Download the processed image
-5. For multiple images: View results in a 5-column grid layout with individual download buttons
+3. Processing is queue-based with real-time progress tracking
+4. For single images: Download the processed image when complete
+5. For multiple images: View results in a responsive grid layout
 6. Download all processed images as a ZIP file using "Download All" button
 
 #### Single Image Processing
 - Upload one image
-- Processing happens as before with the same interface
+- Processing happens through the queue system with status updates
 
 #### Batch Processing (2-10 images)
 - Upload multiple images (up to 10)
 - Images are displayed in a grid preview
-- Processing happens for all images simultaneously
-- Results are shown in a 5-column, 2-row grid layout
+- Processing happens for all images simultaneously through the queue
+- Results are shown in a responsive grid layout
 - Each image has its own download button
 - "Download All (ZIP)" button downloads all processed images as a zip file
 
@@ -228,19 +226,6 @@ curl http://localhost:8000/api/v1/background-removal/result/{job_id} \
 
 # Download batch results as ZIP
 curl http://localhost:8000/api/v1/background-removal/batch-results/{batch_id} \
-  -o batch-results.zip
-
-# Process single image directly
-curl -X POST \
-  -F "file=@your-image.jpg" \
-  http://localhost:8000/api/v1/background-removal/process-direct \
-  -o result.png
-
-# Process batch directly (returns ZIP)
-curl -X POST \
-  -F "files=@image1.jpg" \
-  -F "files=@image2.jpg" \
-  http://localhost:8000/api/v1/background-removal/process-batch-direct \
   -o batch-results.zip
 ```
 ## 🔄 Workflow
@@ -341,23 +326,25 @@ python test_real_image_workflow.py
 
 ## 📚 Documentation
 
-- [Frontend-Backend Integration](./FRONTEND_BACKEND_INTEGRATION.md)
 - [Backend Architecture](./backend/ARCHITECTURE.md)
+- [Backend Testing Documentation](./backend/TESTING_DOCUMENTATION.md)
+- [AWS Deployment Guide](./backend/deployment/aws/DEPLOYMENT_GUIDE.md)
 - [API Documentation](http://localhost:8000/docs) (when running)
-- [Deployment Guide](./backend/deployment/aws/DEPLOYMENT_GUIDE.md)
 
 ## ⚠️ Known Issues
 
-- Cross-process job status synchronization relies on file-based detection
-- In-memory job tracking doesn't scale (use Redis for production)
-- Worker restart may cause job state loss
+- Job tracking relies on file-based status detection between API and workers
+- In-memory job tracking doesn't scale (Redis recommended for production)
+- Worker restart may cause job state loss without persistent storage
 
 ## 🗺️ Roadmap
 
+- [x] Background removal with batch processing
+- [x] Queue-based job processing
+- [x] Real-time status updates
 - [ ] Redis integration for shared job state
-- [ ] User authentication and authorization
-- [ ] Batch processing support
-- [ ] Additional AI models integration
+- [ ] User authentication and authorization  
+- [ ] Additional AI models (background changing, sky replacement, outpainting)
 - [ ] Real-time WebSocket notifications
 - [ ] Performance optimizations
 - [ ] Mobile app support
