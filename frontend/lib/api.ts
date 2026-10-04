@@ -127,3 +127,50 @@ export class BackgroundRemovalAPI {
 
 
 }
+
+export type ToolService = "background-changing" | "sky-replacement";
+
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  try {
+    const errorData = await response.json();
+    return errorData.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** Single-image jobs for the background changer and sky swap tools */
+export class ToolAPI {
+  static async submitJob(service: ToolService, formData: FormData): Promise<JobResponse> {
+    const response = await fetch(`/api/tools/${service}/process`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(await errorMessage(response, "Failed to submit job"));
+    }
+
+    return response.json();
+  }
+
+  static async getJobStatus(service: ToolService, jobId: string): Promise<JobStatus> {
+    const response = await fetch(`/api/tools/${service}/status/${jobId}`);
+
+    if (!response.ok) {
+      throw new Error(await errorMessage(response, "Failed to get job status"));
+    }
+
+    return response.json();
+  }
+
+  static async getJobResult(service: ToolService, jobId: string): Promise<Blob> {
+    const response = await fetch(`/api/tools/${service}/result/${jobId}`);
+
+    if (!response.ok) {
+      throw new Error(await errorMessage(response, "Failed to get job result"));
+    }
+
+    return response.blob();
+  }
+}
