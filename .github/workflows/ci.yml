@@ -52,6 +52,8 @@ jobs:
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
+      # Oracle Cloud's free VMs are arm64, so the backend is built for it too
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Build backend image
         uses: docker/build-push-action@v6
@@ -59,6 +61,7 @@ jobs:
           context: backend
           file: backend/deployment/docker/Dockerfile
           target: production
+          platforms: linux/amd64,linux/arm64
           push: false
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
@@ -69,3 +72,7 @@ jobs:
           push: false
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+      - name: Check the HTTPS compose override
+        run: |
+          printf 'RABBITMQ_DEFAULT_PASS=ci\nSITE_ADDRESS=example.com\n' > .env
+          docker compose -f docker-compose.yml -f docker-compose.https.yml config --quiet
