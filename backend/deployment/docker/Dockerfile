@@ -20,7 +20,11 @@ RUN pip install -r requirements/prod.txt
 # Bake the background removal model into the image so workers don't
 # download it on first job.
 ARG REMBG_MODEL=u2net
+# Sky segmentation model for sky swap (see sky_model_url in config/settings.py)
+ARG SKY_MODEL_URL=https://huggingface.co/Xenova/segformer-b0-finetuned-ade-512-512/resolve/main/onnx/model.onnx
+ENV SKY_MODEL_PATH=/opt/models/segformer-b0-ade.onnx
 RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
+    && python -c "import urllib.request; urllib.request.urlretrieve('${SKY_MODEL_URL}', '${SKY_MODEL_PATH}')" \
     && mkdir -p "$NUMBA_CACHE_DIR" \
     && chmod -R a+rX /opt/models \
     && chmod -R a+rwX "$NUMBA_CACHE_DIR"

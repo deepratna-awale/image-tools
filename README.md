@@ -5,9 +5,9 @@ AI-powered image processing platform with background removal, background changin
 ## 🚀 Features
 
 - **Background Removal**: Remove backgrounds from images using AI models ✅
-- **Background Changing**: Replace backgrounds with custom images or colors 🔄
-- **Sky Replacement**: Change sky in landscape photos 🔄  
-- **Outpainting**: Extend images beyond their original boundaries 🔄
+- **Background Changing**: Replace backgrounds with custom images or colors ✅
+- **Sky Replacement**: Change sky in landscape photos (preset or uploaded skies) ✅
+- **Outpainting**: Extend images beyond their original boundaries (coming soon)
 - **Batch Processing**: Process up to 10 images simultaneously with ZIP download
 - **Queue-based Processing**: Scalable job processing with RabbitMQ/SQS
 - **Real-time Status Updates**: Track processing progress in real-time
