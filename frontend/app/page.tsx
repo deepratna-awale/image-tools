@@ -74,6 +74,9 @@ export default function Home() {
                 fill
                 style={{ objectFit: "cover" }}
               />
+              <span className="absolute top-3 right-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium shadow">
+                Coming soon
+              </span>
             </AspectRatio>
             <span className="mt-3 text-base font-medium text-center">
               Outpainting

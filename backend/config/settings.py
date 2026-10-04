@@ -51,6 +51,15 @@ class Settings(BaseSettings):
     max_queue_size: int = 1000
     worker_concurrency: int = 1
     rembg_model: str = "u2net"
+    # Sky swap segmentation model: any ADE20K semantic segmentation ONNX export with a
+    # "pixel_values" input and [1, 150, h, w] logits works. The default (SegFormer-b0)
+    # is released under NVIDIA's non-commercial license; swap the URL for commercial use.
+    sky_model_url: str = "https://huggingface.co/Xenova/segformer-b0-finetuned-ade-512-512/resolve/main/onnx/model.onnx"
+    sky_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "segformer-b0-ade.onnx"
+    )
+    sky_model_input_size: int = 512
+    sky_class_index: int = 2  # "sky" in ADE20K
     
     # Security
     secret_key: str = "your-secret-key-change-in-production"

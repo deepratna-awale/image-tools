@@ -56,6 +56,9 @@ export function Navbar() {
                 className="px-4 py-2 rounded-full transition"
               >
                 Outpainting
+                <span className="ml-2 rounded-full bg-background/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Soon
+                </span>
               </Link>
             </NavigationMenuLink>
           </NavigationMenuItem>

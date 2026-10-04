@@ -9,9 +9,10 @@ import {
 
 interface DropZoneProps {
   onFilesChange?: (files: File[]) => void;
+  maxFiles?: number;
 }
 
-const DropZone = ({ onFilesChange }: DropZoneProps) => {
+const DropZone = ({ onFilesChange, maxFiles = 10 }: DropZoneProps) => {
   const [files, setFiles] = useState<File[] | undefined>();
 
   const handleDrop = (files: File[]) => {
@@ -28,7 +29,7 @@ const DropZone = ({ onFilesChange }: DropZoneProps) => {
         className="flex h-full w-full items-center justify-center px-8"
         maxSize={1024 * 1024 * 10}
         minSize={1024}
-        maxFiles={10}
+        maxFiles={maxFiles}
         accept={{ "image/jpg": [],
           "image/jpeg": [],
           "image/png": [],
