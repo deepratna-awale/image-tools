@@ -1,19 +1,2 @@
 # Production dependencies
 -r base.txt
-
-# Production ASGI server
-gunicorn>=21.2.0
-
-# Monitoring and logging
-prometheus-client>=0.17.0
-structlog>=23.1.0
-
-# Security
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-
-# Database (optional)
-sqlalchemy>=2.0.0
-alembic>=1.12.0
-asyncpg>=0.28.0  # PostgreSQL
-redis>=5.0.0

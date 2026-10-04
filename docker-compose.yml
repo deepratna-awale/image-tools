@@ -1,0 +1,69 @@
+# Production stack for a single host: `docker compose up -d --build`
+# Only the frontend is published; it proxies all API calls to the backend.
+name: image-tools
+
+x-backend: &backend
+  build:
+    context: ./backend
+    dockerfile: deployment/docker/Dockerfile
+    target: production
+  image: image-tools-backend:latest
+  restart: unless-stopped
+  # RabbitMQ credentials (RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS) come from .env
+  env_file: .env
+  environment:
+    QUEUE_TYPE: ${QUEUE_TYPE:-rabbitmq}
+    RABBITMQ_HOST: rabbitmq
+    STORAGE_TYPE: ${STORAGE_TYPE:-local}
+    LOCAL_STORAGE_PATH: /app/storage
+    DEBUG: "false"
+    LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  volumes:
+    # API and worker share job files and status through this volume
+    - storage:/app/storage
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    image: image-tools-frontend:latest
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://api:8000
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    ports:
+      # Bound to localhost only; reachable from the host for debugging
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "workers.image_processor"]
+    healthcheck:
+      disable: true
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    # Reads RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS from .env
+    env_file: .env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  storage:
+  rabbitmq_data:

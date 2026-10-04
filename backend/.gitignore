@@ -222,7 +222,7 @@ test_uploads/*
 storage/*
 
 # Temporary test files
-test_*.py
+/test_*.py
 temp_*
 
 # Local configuration overrides
@@ -234,7 +234,7 @@ temp_*
 logs/
 
 # Model files (if any ML models are downloaded)
-models/
+/models/
 *.pth
 *.pkl
 *.joblib

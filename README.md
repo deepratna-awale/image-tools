@@ -106,13 +106,11 @@ The application will be available at:
 ### Docker Setup
 
 ```bash
-# Start all services with Docker Compose
-cd backend/deployment/docker
-docker-compose up -d
-
-# Or for development
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+cp .env.example .env      # set RABBITMQ_DEFAULT_PASS
+docker compose up -d --build
 ```
+
+This starts the frontend on http://localhost:3000 plus the API, worker and RabbitMQ. See [Deployment](#-deployment).
 
 ## 📁 Project Structure
 
@@ -172,7 +170,6 @@ ALLOWED_EXTENSIONS=jpg,jpeg,png,webp
 Key environment variables in `frontend/.env.local`:
 
 ```env
-NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 BACKEND_URL=http://localhost:8000
 ```
 
@@ -253,18 +250,13 @@ cd backend
 python -m pytest tests/
 ```
 
-### Frontend Tests
+### Frontend Checks
 ```bash
 cd frontend
-pnpm test
+pnpm lint
+pnpm build
 ```
 
-### Integration Tests
-```bash
-# Test full workflow
-cd backend
-python test_real_image_workflow.py
-```
 
 ## 📊 Monitoring
 
@@ -280,22 +272,33 @@ python test_real_image_workflow.py
 
 ## 🚀 Deployment
 
-### Production Deployment
+### Production Deployment (single host, Docker Compose)
 
-1. **Docker Production Setup**
-   ```bash
-   cd backend/deployment/docker
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
+The default target is one Linux host (any VPS or VM with Docker) running the root `docker-compose.yml`:
 
-2. **AWS ECS Deployment**
-   See `backend/deployment/aws/DEPLOYMENT_GUIDE.md`
+| Service | Image | Notes |
+|---------|-------|-------|
+| `frontend` | `frontend/Dockerfile` (Next.js standalone) | Published on `FRONTEND_PORT` (3000). Proxies all API calls server-side via `BACKEND_URL`. |
+| `api` | `backend/deployment/docker/Dockerfile` | FastAPI on port 8000, bound to `127.0.0.1` only. |
+| `worker` | same image as `api` | Runs `python -m workers.image_processor`. The rembg model is baked into the image. |
+| `rabbitmq` | `rabbitmq:3-management-alpine` | Job queue, data persisted in a volume. |
 
-3. **Environment Configuration**
-   - Use proper environment files for production
-   - Configure S3 for file storage
-   - Set up proper queue infrastructure
-   - Configure logging and monitoring
+1. Install Docker and the Compose plugin on the host.
+2. `cp .env.example .env` and set at least `RABBITMQ_DEFAULT_PASS`.
+3. `docker compose up -d --build`
+4. Put a TLS-terminating reverse proxy (Caddy, nginx, a load balancer) in front of port 3000.
+
+Check it with `docker compose ps` (all services healthy) and `curl localhost:3000/api/health`.
+
+The `api` and `worker` share job files and job status through the `storage` volume, so they must run on the same host. Running several API replicas or splitting services across machines (e.g. the ECS configs in `backend/deployment/aws`) needs shared job state first (Redis, see Known Issues).
+
+### Continuous Integration
+
+`.github/workflows/ci.yml` runs on every pull request and push to `main`: backend tests (pytest), frontend lint and production build, and a build of both Docker images.
+
+### AWS ECS
+
+See `backend/deployment/aws/DEPLOYMENT_GUIDE.md`. Note the shared-state limitation above.
 
 ### Security Considerations
 

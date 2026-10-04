@@ -10,7 +10,9 @@ sys.path.insert(0, str(backend_dir))
 # Set test environment variables
 os.environ.setdefault("QUEUE_TYPE", "rabbitmq")
 os.environ.setdefault("STORAGE_TYPE", "local")
-os.environ.setdefault("LOCAL_STORAGE_PATH", "./test_uploads")
+import tempfile
+
+os.environ.setdefault("LOCAL_STORAGE_PATH", tempfile.mkdtemp(prefix="image_tools_test_"))
 os.environ.setdefault("DEBUG", "true")
 os.environ.setdefault("LOG_LEVEL", "DEBUG")
 
