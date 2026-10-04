@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from functools import lru_cache
 from typing import Any
 import io
 import numpy as np
@@ -8,6 +9,12 @@ from rembg import new_session, remove
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=None)
+def get_rembg_session(model_name: str):
+    """One model session per process, shared by every tool that needs a cutout"""
+    return new_session(model_name)
 
 
 class BackgroundRemovalProcessor:
@@ -21,7 +28,7 @@ class BackgroundRemovalProcessor:
     @property
     def session(self):
         if self._session is None:
-            self._session = new_session(settings.rembg_model)
+            self._session = get_rembg_session(settings.rembg_model)
         return self._session
     
     async def process(self, image_data: bytes) -> bytes:

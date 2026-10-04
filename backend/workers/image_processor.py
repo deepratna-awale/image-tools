@@ -9,6 +9,8 @@ from core.messaging.queue_manager import QueueManager
 from core.messaging.rabbitmq_adapter import RabbitMQAdapter
 from core.messaging.sqs_adapter import SQSAdapter
 from services.background_removal.service import BackgroundRemovalService
+from services.background_changing.service import BackgroundChangingService
+from services.sky_replacement.service import SkyReplacementService
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -27,9 +29,8 @@ class ImageProcessorWorker:
         # Initialize services
         self.services = {
             ServiceType.BACKGROUND_REMOVAL: BackgroundRemovalService(),
-            # Add other services as they're implemented
-            # ServiceType.BACKGROUND_CHANGING: BackgroundChangingService(),
-            # ServiceType.SKY_REPLACEMENT: SkyReplacementService(),
+            ServiceType.BACKGROUND_CHANGING: BackgroundChangingService(),
+            ServiceType.SKY_REPLACEMENT: SkyReplacementService(),
             # ServiceType.OUTPAINTING: OutpaintingService(),
         }
         
