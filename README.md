@@ -292,6 +292,10 @@ Check it with `docker compose ps` (all services healthy) and `curl localhost:300
 
 The `api` and `worker` share job files and job status through the `storage` volume, so they must run on the same host. Running several API replicas or splitting services across machines (e.g. the ECS configs in `backend/deployment/aws`) needs shared job state first (Redis, see Known Issues).
 
+### Free hosting (Oracle Cloud Always Free)
+
+The same stack runs at no cost on an Oracle Cloud Always Free Arm VM, with Caddy in front for HTTPS (`docker-compose.https.yml`). See [deploy/oracle/README.md](deploy/oracle/README.md) for the steps; `deploy/oracle/setup.sh` does the server side in one command.
+
 ### Continuous Integration
 
 `.github/workflows/ci.yml` runs on every pull request and push to `main`: backend tests (pytest), frontend lint and production build, and a build of both Docker images.
