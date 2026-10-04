@@ -1,5 +1,7 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from typing import Optional
+from urllib.parse import quote
 import os
 
 
@@ -16,7 +18,13 @@ class Settings(BaseSettings):
     
     # Queue Configuration
     queue_type: str = "rabbitmq"  # rabbitmq or sqs
-    rabbitmq_url: str = "amqp://guest:guest@localhost/"
+    # Either set RABBITMQ_URL directly, or let it be built from the parts below
+    # (the user/password names match the rabbitmq image's own variables).
+    rabbitmq_url: Optional[str] = None
+    rabbitmq_host: str = "localhost"
+    rabbitmq_port: int = 5672
+    rabbitmq_default_user: str = "guest"
+    rabbitmq_default_pass: str = "guest"
     
     # AWS Configuration
     aws_region: str = "us-east-1"
@@ -42,6 +50,7 @@ class Settings(BaseSettings):
     job_result_ttl: int = 3600  # 1 hour
     max_queue_size: int = 1000
     worker_concurrency: int = 1
+    rembg_model: str = "u2net"
     
     # Security
     secret_key: str = "your-secret-key-change-in-production"
@@ -60,6 +69,15 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
+
+    @model_validator(mode="after")
+    def _build_rabbitmq_url(self):
+        if not self.rabbitmq_url:
+            user = quote(self.rabbitmq_default_user, safe="")
+            password = quote(self.rabbitmq_default_pass, safe="")
+            self.rabbitmq_url = f"amqp://{user}:{password}@{self.rabbitmq_host}:{self.rabbitmq_port}/"
+        return self
 
 
 # Global settings instance

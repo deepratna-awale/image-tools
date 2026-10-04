@@ -296,6 +296,9 @@ class BackgroundRemovalService:
         """Get the zip file containing all batch results"""
         batch_result = self.batch_jobs.get(batch_id)
         if not batch_result or not batch_result.zip_url:
+            # Rebuild from the shared tracker (e.g. after an API restart)
+            batch_result = await self.get_batch_job_status(batch_id)
+        if not batch_result or not batch_result.zip_url:
             return None
         
         try:
@@ -333,6 +336,8 @@ class BackgroundRemovalService:
                 created_at=job.created_at
             )
             
+            self.batch_tracker.update_job_status(job.job_id, JobStatus.QUEUED.value)
+
             # Send to queue
             await self.queue_manager.send_job(job)
             
@@ -343,9 +348,32 @@ class BackgroundRemovalService:
             logger.error(f"Error submitting background removal job: {e}")
             raise
     
+    def _sync_from_tracker(self, job_id: str) -> Optional[JobResult]:
+        """Merge the worker-reported status (shared tracker file) into the in-memory job"""
+        info = self.batch_tracker.get_job_status(job_id)
+        job_result = self.jobs.get(job_id)
+        if not info:
+            return job_result
+
+        if not job_result:
+            job_result = JobResult(
+                job_id=job_id,
+                status=JobStatus(info.get("status", JobStatus.QUEUED.value)),
+                service_type=ServiceType.BACKGROUND_REMOVAL,
+            )
+            self.jobs[job_id] = job_result
+
+        job_result.status = JobStatus(info.get("status", job_result.status))
+        job_result.output_url = info.get("output_url") or job_result.output_url
+        job_result.error_message = info.get("error_message") or job_result.error_message
+        job_result.processing_time = info.get("processing_time") or job_result.processing_time
+        if info.get("completed_at"):
+            job_result.completed_at = datetime.fromisoformat(info["completed_at"])
+        return job_result
+
     async def get_job_status(self, job_id: str) -> Optional[JobResult]:
         """Get job status"""
-        job_result = self.jobs.get(job_id)
+        job_result = self._sync_from_tracker(job_id)
         if not job_result:
             return None
         
@@ -375,7 +403,7 @@ class BackgroundRemovalService:
     
     async def get_job_result(self, job_id: str) -> Optional[bytes]:
         """Get job result data"""
-        job_result = self.jobs.get(job_id)
+        job_result = self._sync_from_tracker(job_id)
         if not job_result:
             return None
         

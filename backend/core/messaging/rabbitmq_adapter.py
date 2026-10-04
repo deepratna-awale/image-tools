@@ -150,15 +150,9 @@ class RabbitMQAdapter(QueueManager):
                     passive=True
                 )
                 
-                # Get queue info
-                declare_result = await self.channel.queue_declare(
-                    queue_name, 
-                    passive=True
-                )
-                
                 stats[service_type_value] = {
-                    "message_count": declare_result.method.message_count,
-                    "consumer_count": declare_result.method.consumer_count
+                    "message_count": queue.declaration_result.message_count,
+                    "consumer_count": queue.declaration_result.consumer_count
                 }
             
             return stats

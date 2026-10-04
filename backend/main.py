@@ -105,10 +105,10 @@ app.include_router(background_removal_router, prefix=settings.api_prefix)
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    logger.error(f"Global exception: {exc}")
+    logger.exception(f"Global exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"error": "Internal server error", "detail": str(exc)}
+        content={"error": "Internal server error", "detail": str(exc) if settings.debug else None}
     )
 
 

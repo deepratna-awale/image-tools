@@ -1,8 +1,2 @@
-# AWS-specific dependencies
+# AWS dependencies are part of base.txt (boto3 is imported unconditionally)
 -r base.txt
-
-boto3>=1.28.0
-botocore>=1.31.0
-
-# Additional AWS tools
-awscli>=2.13.0

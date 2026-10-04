@@ -3,7 +3,9 @@ import logging
 from typing import Any
 import io
 import numpy as np
-from rembg import remove
+from rembg import new_session, remove
+
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -12,15 +14,21 @@ class BackgroundRemovalProcessor:
     """Image processing logic for background removal"""
     
     def __init__(self):
-        # You can initialize different models here
-        # For example: self.model = rembg.new_session('u2net')
-        pass
+        # The model session is created on first use so the API process,
+        # which never processes images, does not load it.
+        self._session = None
+
+    @property
+    def session(self):
+        if self._session is None:
+            self._session = new_session(settings.rembg_model)
+        return self._session
     
     async def process(self, image_data: bytes) -> bytes:
         """Process image to remove background"""
         try:
             # Run rembg in thread pool since it's CPU intensive
-            result = await asyncio.get_event_loop().run_in_executor(
+            result = await asyncio.get_running_loop().run_in_executor(
                 None, 
                 self._remove_background, 
                 image_data
@@ -35,7 +43,7 @@ class BackgroundRemovalProcessor:
         """Synchronous background removal using rembg"""
         try:
             # Use rembg to remove background
-            output = remove(image_data)
+            output = remove(image_data, session=self.session)
             return output
             
         except Exception as e:

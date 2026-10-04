@@ -1,60 +1,47 @@
-# Multi-stage Docker build for Python app
-FROM python:3.11-slim AS base
+# syntax=docker/dockerfile:1
+# Build context: backend/
+FROM python:3.11-slim-bookworm AS base
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    U2NET_HOME=/opt/models \
+    NUMBA_CACHE_DIR=/tmp/numba_cache \
+    LOCAL_STORAGE_PATH=/app/storage
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Set working directory
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements/base.txt requirements/
-RUN pip install -r requirements/base.txt
+COPY requirements/ requirements/
+RUN pip install -r requirements/prod.txt
 
-# Development stage
-FROM base as development
-COPY requirements/dev.txt requirements/
+# Bake the background removal model into the image so workers don't
+# download it on first job.
+ARG REMBG_MODEL=u2net
+RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
+    && mkdir -p "$NUMBA_CACHE_DIR" \
+    && chmod -R a+rX /opt/models \
+    && chmod -R a+rwX "$NUMBA_CACHE_DIR"
+
+# Development stage (source is bind-mounted by docker-compose)
+FROM base AS development
 RUN pip install -r requirements/dev.txt
+RUN mkdir -p /app/storage && chown appuser:appuser /app/storage
 USER appuser
 
 # Production stage
-FROM base as production
+FROM base AS production
 
-# Install production dependencies
-COPY requirements/prod.txt requirements/
-RUN pip install -r requirements/prod.txt
+COPY --chown=appuser:appuser . .
+RUN mkdir -p /app/storage && chown appuser:appuser /app/storage
 
-# Copy application code
-COPY . .
-
-# Change ownership to appuser
-RUN chown -R appuser:appuser /app
 USER appuser
-
-# Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"
 
-# Default command
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# API by default; the worker overrides this with `python -m workers.image_processor`
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
