@@ -32,7 +32,7 @@ interface ProcessedImage {
 
 export default function BgRemoverPage() {
   const [files, setFiles] = useState<File[] | undefined>();
-  const [status, setStatus] = useState<string>("");
+  const [, setStatus] = useState<string>("");
   const [jobId, setJobId] = useState<string>("");
   const [batchId, setBatchId] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
