@@ -13,6 +13,7 @@ from core.models.responses import (
     BatchJobSubmissionResponse,
     BatchJobStatusResponse
 )
+from config.settings import settings
 from .service import BackgroundRemovalService
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,12 @@ router = APIRouter(prefix="/background-removal", tags=["Background Removal"])
 
 # Initialize service
 bg_service = BackgroundRemovalService()
+
+
+def _check_size(content: bytes, filename: Optional[str]) -> None:
+    if len(content) > settings.max_file_size:
+        limit_mb = settings.max_file_size / (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"{filename or 'File'} exceeds the {limit_mb:.0f}MB limit")
 
 
 @router.post("/process", response_model=JobSubmissionResponse)
@@ -33,6 +40,7 @@ async def queue_background_removal(file: UploadFile = File(...)):
         
         # Read file content
         file_content = await file.read()
+        _check_size(file_content, file.filename)
         
         # Submit job
         job = await bg_service.submit_job(file_content, file.filename)
@@ -126,6 +134,7 @@ async def queue_batch_background_removal(files: List[UploadFile] = File(...)):
                 raise HTTPException(status_code=400, detail="All files must be images")
             
             file_content = await file.read()
+            _check_size(file_content, file.filename)
             files_data.append((file_content, file.filename or f"image_{uuid.uuid4()}.jpg"))
         
         # Submit batch job

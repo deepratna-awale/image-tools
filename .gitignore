@@ -40,9 +40,14 @@ next-env.d.ts
 
 # Project-specific workspace files
 # Uploaded files and results (workspace level)
-uploads/
-results/
-storage/
+/uploads/
+backend/uploads/
+/results/
+backend/results/
+/storage/
+backend/storage/
+test_uploads/
+backend/test_uploads/
 
 # Environment files
 .env

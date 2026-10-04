@@ -1,25 +1,9 @@
 import type { NextConfig } from "next";
 
+// BACKEND_URL is read at request time by the route handlers in app/api,
+// so the same image can be pointed at any backend via the environment.
 const nextConfig: NextConfig = {
-  env: {
-    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:8000',
-  },
-  eslint: {
-    // Allow build to continue with warnings
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    // Allow build to continue with type errors during builds
-    ignoreBuildErrors: true,
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/api/backend/:path*',
-        destination: `${process.env.BACKEND_URL || 'http://localhost:8000'}/api/v1/:path*`,
-      },
-    ];
-  },
+  output: "standalone",
 };
 
 export default nextConfig;

@@ -27,7 +27,7 @@ class SQSAdapter(QueueManager):
             for service_type in ServiceType:
                 # Handle both enum and string values
                 service_type_value = service_type.value if hasattr(service_type, 'value') else service_type
-                queue_name = f"{service_type_value}-queue"
+                queue_name = f"{service_type_value.replace('_', '-')}-queue"
                 
                 try:
                     # Try to get existing queue
@@ -38,7 +38,7 @@ class SQSAdapter(QueueManager):
                     response = self.sqs_client.create_queue(
                         QueueName=queue_name,
                         Attributes={
-                            'VisibilityTimeoutSeconds': '300',
+                            'VisibilityTimeout': '300',
                             'MessageRetentionPeriod': '1209600',  # 14 days
                             'ReceiveMessageWaitTimeSeconds': '20'  # Long polling
                         }
