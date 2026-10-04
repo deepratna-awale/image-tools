@@ -1,0 +1,28 @@
+# Adds HTTPS in front of the frontend with automatic certificates (Caddy).
+# docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
+# Set SITE_ADDRESS in .env to a hostname pointing at this server.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+  frontend:
+    # Only Caddy needs to reach the frontend; keep port 3000 off the public interface
+    ports: !override
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  caddy_data:
+  caddy_config:
