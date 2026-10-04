@@ -198,6 +198,10 @@ BACKEND_URL=http://localhost:8000
 
 ### API Usage
 
+Other apps can call background removal on the live site with an API key: see
+[docs/API.md](./docs/API.md) for keys, limits, and curl/JavaScript examples.
+The commands below are for a local backend.
+
 ```bash
 # Submit a single background removal job
 curl -X POST \
@@ -308,9 +312,8 @@ See `backend/deployment/aws/DEPLOYMENT_GUIDE.md`. Note the shared-state limitati
 
 - Environment variables for sensitive data
 - File upload validation and size limits
-- CORS configuration for production domains
-- Rate limiting (recommended)
-- Authentication (to be implemented)
+- Public API (background removal) behind API keys with per-key rate limits; see [docs/API.md](./docs/API.md)
+- CORS allowlist via `ALLOWED_ORIGINS` (empty by default; the frontend calls the API server-side)
 
 ## 🛠️ Development
 
@@ -333,6 +336,7 @@ See `backend/deployment/aws/DEPLOYMENT_GUIDE.md`. Note the shared-state limitati
 
 ## 📚 Documentation
 
+- [Public Background Removal API](./docs/API.md)
 - [Backend Architecture](./backend/ARCHITECTURE.md)
 - [Backend Testing Documentation](./backend/TESTING_DOCUMENTATION.md)
 - [AWS Deployment Guide](./backend/deployment/aws/DEPLOYMENT_GUIDE.md)

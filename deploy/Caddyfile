@@ -1,4 +1,19 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
-	reverse_proxy frontend:3000
+
+	# Public background-removal API for other apps (docs/API.md). The API checks the
+	# key and rate limit for requests carrying X-Public-Api, which only this route sets.
+	@public_api {
+		path /api/v1/background-removal/*
+		not path /api/v1/background-removal/stats
+	}
+	handle @public_api {
+		reverse_proxy api:8000 {
+			header_up X-Public-Api 1
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
 }
