@@ -6,6 +6,7 @@ import logging
 import uvicorn
 
 from config.settings import settings
+from core.public_api import PublicAPIMiddleware
 from core.models.responses import HealthCheckResponse, APIResponse
 from services.background_removal.router import router as background_removal_router
 from services.background_changing.router import router as background_changing_router
@@ -43,13 +44,18 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
+# API key and rate limit for requests from other apps (see core/public_api.py)
+app.add_middleware(PublicAPIMiddleware)
+
+# CORS is added last so it wraps the key check: preflights are answered first and
+# 401/429 responses still carry CORS headers for the browser to read.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
-    allow_methods=settings.allowed_methods,
-    allow_headers=settings.allowed_headers,
+    allow_origins=settings.allowed_origin_list,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "X-API-Key", "Content-Type"],
+    expose_headers=["Content-Disposition", "Retry-After"],
 )
 
 

@@ -17,6 +17,7 @@ services:
       - caddy_config:/config
     depends_on:
       - frontend
+      - api
 
   frontend:
     # Only Caddy needs to reach the frontend; keep port 3000 off the public interface
