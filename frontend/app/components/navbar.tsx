@@ -52,6 +52,16 @@ export function Navbar() {
           <NavigationMenuItem>
             <NavigationMenuLink asChild>
               <Link
+                href="/prompt-reader"
+                className="px-4 py-2 rounded-full transition"
+              >
+                Prompt Reader
+              </Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink asChild>
+              <Link
                 href="/outpainting"
                 className="px-4 py-2 rounded-full transition"
               >
