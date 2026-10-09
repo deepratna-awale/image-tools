@@ -7,6 +7,7 @@ import uvicorn
 
 from config.settings import settings
 from core.public_api import PublicAPIMiddleware
+from core.api_keys_router import router as api_keys_router
 from core.models.responses import HealthCheckResponse, APIResponse
 from services.background_removal.router import router as background_removal_router
 from services.background_changing.router import router as background_changing_router
@@ -104,6 +105,7 @@ async def root():
 app.include_router(background_removal_router, prefix=settings.api_prefix)
 app.include_router(background_changing_router, prefix=settings.api_prefix)
 app.include_router(sky_replacement_router, prefix=settings.api_prefix)
+app.include_router(api_keys_router, prefix=settings.api_prefix)
 
 # TODO: outpainting is shown as "coming soon" in the frontend
 # app.include_router(outpainting_router, prefix=settings.api_prefix)
