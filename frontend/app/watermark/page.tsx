@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import DropZone from "../components/drop-zone";
 import ToolHeader from "../components/tool-header";
+import FormatSelect from "../components/format-select";
+import { ExportFormat, IMAGE_ACCEPT, encodeCanvas, sameFormat } from "@/lib/formats";
 import ImagePicker from "../components/image-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  FORMAT_EXTENSIONS,
-  OutputFormat,
   baseName,
   canvasToBlob,
   createCanvas,
@@ -82,9 +82,9 @@ function logoStamp(logo: ImageBitmap, settings: Settings, imageWidth: number): S
   return { width, height, draw: (ctx, x, y) => ctx.drawImage(logo, x, y, width, height) };
 }
 
-function renderWatermark(image: ImageBitmap, settings: Settings, logo: ImageBitmap | null, format: OutputFormat) {
+function renderWatermark(image: ImageBitmap, settings: Settings, logo: ImageBitmap | null, format: ExportFormat) {
   const { canvas, ctx } = createCanvas(image.width, image.height);
-  if (format === "image/jpeg") {
+  if (format === "jpg") {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
@@ -116,9 +116,7 @@ function renderWatermark(image: ImageBitmap, settings: Settings, logo: ImageBitm
   return canvas;
 }
 
-function outputFormat(file: File): OutputFormat {
-  return file.type in FORMAT_EXTENSIONS ? (file.type as OutputFormat) : "image/png";
-}
+
 
 const labelClass = "text-sm text-muted-foreground w-16 shrink-0";
 
@@ -129,6 +127,7 @@ export default function WatermarkPage() {
   const [preview, setPreview] = useState<ImageBitmap | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveAs, setSaveAs] = useState<"original" | ExportFormat>("original");
   const [error, setError] = useState("");
   const [settings, setSettings] = useState<Settings>({
     kind: "text",
@@ -184,7 +183,7 @@ export default function WatermarkPage() {
         resizeHeight: Math.round(preview.height * scale),
         resizeQuality: "high",
       });
-      const canvas = renderWatermark(small, settings, logo, "image/png");
+      const canvas = renderWatermark(small, settings, logo, "png");
       const blob = await canvasToBlob(canvas, "image/jpeg", 0.85);
       if (!cancelled) setPreviewUrl(URL.createObjectURL(blob));
     }, 100);
@@ -201,12 +200,12 @@ export default function WatermarkPage() {
       const outputs: { name: string; blob: Blob }[] = [];
       for (const file of files) {
         const image = await loadImage(file);
-        const format = outputFormat(file);
+        const format = saveAs === "original" ? sameFormat(file) : saveAs;
         const canvas = renderWatermark(image, settings, logo, format);
         image.close();
         outputs.push({
-          name: `${baseName(file.name)}-watermarked.${FORMAT_EXTENSIONS[format]}`,
-          blob: await canvasToBlob(canvas, format, 0.92),
+          name: `${baseName(file.name)}-watermarked.${format}`,
+          blob: await encodeCanvas(canvas, format, 0.92),
         });
       }
       if (outputs.length === 1) downloadBlob(outputs[0].blob, outputs[0].name);
@@ -223,7 +222,8 @@ export default function WatermarkPage() {
         href="/watermark"
         description="Put your name, a caption or your logo on one photo or a whole batch. It all happens in your browser."
       />
-      <DropZone maxFiles={20} maxSizeMb={50} onFilesChange={setFiles} />
+      <DropZone maxFiles={20} maxSizeMb={50} accept={IMAGE_ACCEPT} onFilesChange={setFiles} />
+
 
       <div className="mt-8 w-full max-w-5xl px-4 grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 items-start">
         <Card className="order-2 md:order-1">
@@ -321,7 +321,10 @@ export default function WatermarkPage() {
         </Card>
       </div>
 
-      <Button className="mt-6 rounded-full gap-2" disabled={files.length === 0 || isSaving} onClick={save}>
+      <div className="mt-6">
+        <FormatSelect value={saveAs} onChange={setSaveAs} extra={[{ value: "original", label: "Same as original" }]} />
+      </div>
+      <Button className="mt-4 rounded-full gap-2" disabled={files.length === 0 || isSaving} onClick={save}>
         <Download className="h-4 w-4" />
         {isSaving ? "Saving..." : files.length > 1 ? `Download ${files.length} images (ZIP)` : "Download"}
       </Button>

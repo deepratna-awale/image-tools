@@ -139,11 +139,96 @@ export async function webpExif(file: Blob): Promise<Uint8Array | null> {
   return null;
 }
 
-export async function stripMetadata(file: Blob): Promise<Blob> {
+/** Drops comment and XMP blocks from a GIF, keeping every frame and the loop setting */
+function stripGif(bytes: Uint8Array): Uint8Array {
+  const parts: Uint8Array[] = [];
+  let offset = 13;
+  const flags = bytes[10];
+  if (flags & 0x80) offset += 3 * (1 << ((flags & 0x07) + 1)); // global colour table
+  parts.push(bytes.subarray(0, offset));
+  const skipSubBlocks = (start: number) => {
+    let at = start;
+    while (at < bytes.length && bytes[at] !== 0) at += bytes[at] + 1;
+    return at + 1;
+  };
+  while (offset < bytes.length) {
+    const block = bytes[offset];
+    if (block === 0x3b) {
+      parts.push(bytes.subarray(offset, offset + 1));
+      break;
+    }
+    if (block === 0x21) {
+      const label = bytes[offset + 1];
+      const end = skipSubBlocks(offset + 2);
+      const appId = label === 0xff ? String.fromCharCode(...bytes.subarray(offset + 3, offset + 14)) : "";
+      const isMetadata = label === 0xfe || (label === 0xff && !appId.startsWith("NETSCAPE") && !appId.startsWith("ANIMEXTS"));
+      if (!isMetadata) parts.push(bytes.subarray(offset, end));
+      offset = end;
+    } else if (block === 0x2c) {
+      let end = offset + 10;
+      const imageFlags = bytes[offset + 9];
+      if (imageFlags & 0x80) end += 3 * (1 << ((imageFlags & 0x07) + 1)); // local colour table
+      end = skipSubBlocks(end + 1); // LZW minimum code size, then the image data
+      parts.push(bytes.subarray(offset, end));
+      offset = end;
+    } else {
+      throw new Error("This GIF looks damaged");
+    }
+  }
+  return concat(parts);
+}
+
+/** Removes the metadata block, comments and editor data from an SVG */
+function stripSvg(text: string): string {
+  const doc = new DOMParser().parseFromString(text, "image/svg+xml");
+  if (doc.querySelector("parsererror")) throw new Error("This SVG looks damaged");
+  doc.querySelectorAll("metadata").forEach((node) => node.remove());
+  const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_COMMENT);
+  const comments: Node[] = [];
+  while (walker.nextNode()) comments.push(walker.currentNode);
+  comments.forEach((node) => node.parentNode?.removeChild(node));
+  doc.querySelectorAll("*").forEach((element) => {
+    for (const attribute of [...element.attributes]) {
+      if (/^(sodipodi|inkscape):/.test(attribute.name)) element.removeAttribute(attribute.name);
+    }
+    if (/^(sodipodi|inkscape):/.test(element.tagName)) element.remove();
+  });
+  return new XMLSerializer().serializeToString(doc);
+}
+
+export interface Stripped {
+  blob: Blob;
+  name: string;
+  /** True when the file had to be saved again (formats that can't be cleaned in place), which can change the pixels slightly */
+  resaved: boolean;
+}
+
+/** Removes hidden details from an image. JPG, PNG, WebP, GIF and SVG are cleaned in place; others are re-saved */
+export async function stripMetadata(file: File): Promise<Stripped> {
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ascii = (start: number, end: number) => String.fromCharCode(...bytes.subarray(start, end));
-  if (bytes[0] === 0xff && bytes[1] === 0xd8) return new Blob([stripJpeg(bytes)], { type: "image/jpeg" });
-  if (ascii(1, 4) === "PNG") return new Blob([stripPng(bytes)], { type: "image/png" });
-  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return new Blob([stripWebp(bytes)], { type: "image/webp" });
-  throw new Error("Only JPG, PNG and WebP files are supported");
+  const same = (data: BlobPart, type: string): Stripped => ({ blob: new Blob([data], { type }), name: file.name, resaved: false });
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) return same(stripJpeg(bytes), "image/jpeg");
+  if (ascii(1, 4) === "PNG") return same(stripPng(bytes), "image/png");
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return same(stripWebp(bytes), "image/webp");
+  if (ascii(0, 4) === "GIF8") return same(stripGif(bytes), "image/gif");
+  // BMP and ICO files have no room for location or camera details
+  if (ascii(0, 2) === "BM" || (bytes[0] === 0 && bytes[1] === 0 && (bytes[2] === 1 || bytes[2] === 2) && bytes[3] === 0)) {
+    return same(bytes, file.type || "application/octet-stream");
+  }
+  if (file.type === "image/svg+xml" || /\.svg$/i.test(file.name)) {
+    return same(stripSvg(new TextDecoder().decode(bytes)), "image/svg+xml");
+  }
+
+  // TIFF, AVIF and HEIC: decoding and saving again leaves the metadata behind
+  const { decodeImage, encodeCanvas, sameFormat } = await import("./formats");
+  const image = await decodeImage(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  canvas.getContext("2d")!.drawImage(image, 0, 0);
+  image.close();
+  const format = sameFormat(file);
+  const blob = await encodeCanvas(canvas, format, 0.92);
+  return { blob, name: `${file.name.replace(/\.[^.]+$/, "")}.${format}`, resaved: true };
 }
