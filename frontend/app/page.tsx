@@ -1,109 +1,87 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AspectRatio } from "../components/ui/aspect-ratio";
+import { ArrowUpRight, CodeXml, Gift, Layers, UserX } from "lucide-react";
+import { TOOLS } from "@/lib/tools";
+import { cn } from "@/lib/utils";
+
+const HIGHLIGHTS = [
+  { icon: Gift, title: "Free", text: "Every tool is free to use." },
+  { icon: UserX, title: "No sign-up", text: "Open a tool and drop in an image." },
+  { icon: Layers, title: "Batch ready", text: "Remove backgrounds from 10 images at once." },
+  { icon: CodeXml, title: "Developer API", text: "Call background removal from your own apps." },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-2 pb-24 gap-18 sm:p-3 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[12px] items-center w-full max-w-5xl">
-        <h1 className="text-center w-full text-6xl">Image Tools</h1>
-        <p className="text-muted-foreground text-center w-full text-lg">
-          Use popular image tools in your browser, free, no sign-up required.
+    <main className="mx-auto flex w-full max-w-6xl flex-col items-center px-4">
+      <section className="flex flex-col items-center gap-6 pt-16 pb-14 text-center sm:pt-24">
+        <span className="rounded-full border border-border/70 bg-background/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
+          Free · No sign-up · Works in your browser
+        </span>
+        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+          Edit images in seconds with{" "}
+          <span className="bg-gradient-to-r from-primary via-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
+            AI tools
+          </span>
+        </h1>
+        <p className="max-w-xl text-lg text-muted-foreground text-balance">
+          Remove or change backgrounds, swap skies and read Stable Diffusion prompts, all from one place.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 w-full max-w-4xl mx-auto">
-          <Link href="/bg-remover" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
+      </section>
+
+      <section className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {TOOLS.map(({ href, name, description, image, icon: Icon, comingSoon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              "group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm backdrop-blur transition duration-300",
+              "hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
+              comingSoon && "opacity-80"
+            )}
+          >
+            <div className="relative aspect-[3/2] overflow-hidden bg-muted">
               <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/bg-remover.png"
-                alt="Background Remover"
+                src={image}
+                alt={name}
                 fill
-                style={{ objectFit: "cover" }}
+                sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+                className={cn(
+                  "object-cover transition-transform duration-500 group-hover:scale-105",
+                  comingSoon && "grayscale-[40%]"
+                )}
               />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Background Remover
-            </span>
+              {comingSoon && (
+                <span className="absolute top-3 right-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium shadow">
+                  Coming soon
+                </span>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col gap-2 p-5">
+              <div className="flex items-center gap-2">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="size-4" />
+                </span>
+                <h2 className="font-semibold">{name}</h2>
+                <ArrowUpRight className="ml-auto size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
+              </div>
+              <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
           </Link>
-          <Link href="/sky-swap" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/sky-swap.png"
-                alt="Sky Swap"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Sky Swap
-            </span>
-          </Link>
-          <Link href="/bg-changer" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/bg-changer.png"
-                alt="Background Changer"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Background Changer
-            </span>
-          </Link>
-          <Link href="/prompt-reader" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/prompt-reader.png"
-                alt="Prompt Reader"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Prompt Reader
-            </span>
-          </Link>
-          <Link href="/outpainting" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/outpainting.webp"
-                alt="Outpainting"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-              <span className="absolute top-3 right-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium shadow">
-                Coming soon
-              </span>
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Outpainting
-            </span>
-          </Link>
-        </div>
-      </main>
-      <footer className="flex gap-[24px] flex-wrap items-center justify-center w-full mt-12">
-        Footer Text
-      </footer>
-    </div>
+        ))}
+      </section>
+
+      <section className="mt-20 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
+          <div key={title} className="flex gap-3 rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur">
+            <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{title}</span>
+              <span className="text-sm text-muted-foreground">{text}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+    </main>
   );
 }

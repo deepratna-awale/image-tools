@@ -5,6 +5,7 @@ import { Navbar } from "./components/navbar";
 import HealthCheck from "./components/health-check";
 import "./globals.css";
 import AnimatedGrid from "./components/animated-grid";
+import { Footer } from "./components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Image Tools",
+  title: "Image Tools: free AI image editing in your browser",
   description: "Use popular image tools in your browser, free, no sign-up required.",
 };
 
@@ -29,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased relative`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased relative flex min-h-screen flex-col`}
       >
         {/* Animated grid as background */}
         <AnimatedGrid className="fixed inset-0 -z-10 w-full h-full" />
@@ -40,10 +41,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
-          <div className="container mx-auto p-4">
+          <div className="px-4">
             <HealthCheck />
           </div>
-          {children}
+          <div className="flex-1">{children}</div>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

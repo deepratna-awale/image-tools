@@ -24,9 +24,9 @@ const DropZone = ({ onFilesChange, maxFiles = 10 }: DropZoneProps) => {
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center px-16">
+    <div className="flex w-full items-center justify-center px-4">
       <Dropzone
-        className="flex h-full w-full items-center justify-center px-8"
+        className="min-h-56 w-full max-w-3xl whitespace-normal items-center justify-center rounded-2xl border-2 border-dashed bg-card/60 px-4 sm:px-8 backdrop-blur transition-colors hover:border-primary/50 hover:bg-card"
         maxSize={1024 * 1024 * 10}
         minSize={1024}
         maxFiles={maxFiles}
