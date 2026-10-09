@@ -69,6 +69,15 @@ class Settings(BaseSettings):
     )
     sky_model_input_size: int = 512
     sky_class_index: int = 2  # "sky" in ADE20K
+    # AI Shield: Stable Diffusion VAEs (diffusers folders with config.json and
+    # diffusion_pytorch_model.safetensors) whose image encoders the cloak is aimed at.
+    # Comma-separated; the Docker image bakes in the SD 1.x/2.x and SDXL ones.
+    ai_shield_model_dirs: str = ",".join(
+        os.path.join(os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), name)
+        for name in ("sd-vae-ft-mse", "sdxl-vae")
+    )
+    # CPU threads for the cloak; 0 uses every core
+    ai_shield_threads: int = 0
     
     # Security
     secret_key: str = "your-secret-key-change-in-production"
@@ -108,6 +117,10 @@ class Settings(BaseSettings):
     @property
     def api_key_list(self) -> List[str]:
         return parse_list(self.api_keys)
+
+    @property
+    def ai_shield_model_dir_list(self) -> List[str]:
+        return parse_list(self.ai_shield_model_dirs)
 
     @property
     def allowed_origin_list(self) -> List[str]:

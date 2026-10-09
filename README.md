@@ -14,6 +14,7 @@ AI-powered image processing platform with background removal, background changin
 - **Remove Photo Metadata**: Strips GPS, camera details and other EXIF/XMP data without re-encoding (runs in the browser) ✅
 - **Watermark & Add Text**: Text or logo watermarks on one image or a batch (runs in the browser) ✅
 - **Images to PDF**: Combine images into one PDF in any order (runs in the browser) ✅
+- **AI Shield**: Cloak art against Stable Diffusion mimicry and img2img (an encoder attack in the style of PhotoGuard and Mist, aimed at the SD 1.x/2.x and SDXL VAEs and run on the CPU) and tag files as not for AI training (IPTC Data Mining, TDMRep, noai) ✅
 - **Outpainting**: Extend images beyond their original boundaries (coming soon)
 - **Batch Processing**: Process up to 10 images simultaneously with ZIP download
 - **Queue-based Processing**: Scalable job processing with RabbitMQ/SQS
