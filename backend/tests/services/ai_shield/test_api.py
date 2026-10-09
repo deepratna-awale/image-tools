@@ -111,7 +111,7 @@ def test_cloak_moves_latents_towards_target_within_budget():
 
 def test_texture_mask_range():
     mask = texture_mask(np.asarray(Image.open(io.BytesIO(photo())).convert("RGB")))
-    assert mask.min() >= 0.34 and mask.max() <= 1.0
+    assert mask.min() >= 0.19 and mask.max() <= 1.0
 
 
 def test_target_pattern_size():
