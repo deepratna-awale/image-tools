@@ -5,19 +5,10 @@ import { Download } from "lucide-react";
 import DropZone from "../components/drop-zone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  FORMAT_EXTENSIONS,
-  OutputFormat,
-  baseName,
-  canvasToBlob,
-  createCanvas,
-  downloadBlob,
-  downloadZip,
-  formatBytes,
-  loadImage,
-} from "@/lib/image-utils";
+import { baseName, createCanvas, downloadBlob, downloadZip, formatBytes, loadImage } from "@/lib/image-utils";
+import { EXPORT_FORMATS, ExportFormat, IMAGE_ACCEPT, encodeCanvas, formatInfo, sameFormat } from "@/lib/formats";
 
-type FormatChoice = "original" | OutputFormat;
+type FormatChoice = "original" | ExportFormat;
 type ResizeMode = "none" | "percent" | "fit";
 
 interface Converted {
@@ -31,16 +22,13 @@ interface Converted {
 
 const FORMATS: { value: FormatChoice; label: string }[] = [
   { value: "original", label: "Keep format" },
-  { value: "image/jpeg", label: "JPG" },
-  { value: "image/png", label: "PNG" },
-  { value: "image/webp", label: "WebP" },
+  ...EXPORT_FORMATS.map((format) => ({ value: format.id, label: format.label })),
 ];
 
 const inputClass = "h-9 rounded-md border bg-background px-3 text-sm";
 
-function outputFormat(file: File, choice: FormatChoice): OutputFormat {
-  if (choice !== "original") return choice;
-  return file.type in FORMAT_EXTENSIONS ? (file.type as OutputFormat) : "image/png";
+function outputFormat(file: File, choice: FormatChoice): ExportFormat {
+  return choice === "original" ? sameFormat(file) : choice;
 }
 
 function targetSize(width: number, height: number, mode: ResizeMode, percent: number, maxW: number, maxH: number) {
@@ -52,10 +40,10 @@ function targetSize(width: number, height: number, mode: ResizeMode, percent: nu
   return { width, height };
 }
 
-function render(image: ImageBitmap, width: number, height: number, format: OutputFormat) {
+function render(image: ImageBitmap, width: number, height: number, format: ExportFormat) {
   const { canvas, ctx } = createCanvas(width, height);
   // JPG has no transparency, so transparent areas become white instead of black
-  if (format === "image/jpeg") {
+  if (format === "jpg") {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
@@ -64,12 +52,12 @@ function render(image: ImageBitmap, width: number, height: number, format: Outpu
 }
 
 /** Lowers quality, then size, until the file fits under the target */
-async function encodeUnder(image: ImageBitmap, width: number, height: number, format: OutputFormat, maxBytes: number) {
+async function encodeUnder(image: ImageBitmap, width: number, height: number, format: ExportFormat, maxBytes: number) {
   let scale = 1;
   for (let attempt = 0; attempt < 8; attempt++) {
     const canvas = render(image, width * scale, height * scale, format);
-    if (format === "image/png") {
-      const blob = await canvasToBlob(canvas, format);
+    if (!formatInfo(format).lossy) {
+      const blob = await encodeCanvas(canvas, format);
       if (blob.size <= maxBytes) return { blob, canvas };
     } else {
       let low = 0.05;
@@ -77,7 +65,7 @@ async function encodeUnder(image: ImageBitmap, width: number, height: number, fo
       let best: Blob | null = null;
       for (let i = 0; i < 7; i++) {
         const quality = (low + high) / 2;
-        const blob = await canvasToBlob(canvas, format, quality);
+        const blob = await encodeCanvas(canvas, format, quality);
         if (blob.size <= maxBytes) {
           best = blob;
           low = quality;
@@ -94,7 +82,7 @@ async function encodeUnder(image: ImageBitmap, width: number, height: number, fo
 
 export default function ResizeConvertPage() {
   const [files, setFiles] = useState<File[]>([]);
-  const [format, setFormat] = useState<FormatChoice>("image/webp");
+  const [format, setFormat] = useState<FormatChoice>("webp");
   const [quality, setQuality] = useState(80);
   const [useTarget, setUseTarget] = useState(false);
   const [targetKb, setTargetKb] = useState(200);
@@ -124,11 +112,11 @@ export default function ResizeConvertPage() {
           ? await encodeUnder(image, size.width, size.height, type, targetKb * 1024)
           : await (async () => {
               const canvas = render(image, size.width, size.height, type);
-              return { blob: await canvasToBlob(canvas, type, quality / 100), canvas };
+              return { blob: await encodeCanvas(canvas, type, quality / 100), canvas };
             })();
         image.close();
         converted.push({
-          name: `${baseName(file.name)}.${FORMAT_EXTENSIONS[type]}`,
+          name: `${baseName(file.name)}.${type}`,
           original: file,
           blob,
           url: URL.createObjectURL(blob),
@@ -143,16 +131,17 @@ export default function ResizeConvertPage() {
     setIsWorking(false);
   };
 
-  const lossy = format !== "image/png";
+  const lossy = format === "original" || formatInfo(format).lossy;
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
       <h1 className="text-2xl font-bold p-8">Resize, Compress &amp; Convert</h1>
       <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Shrink photos, change their size, or convert between JPG, PNG and WebP. Everything happens in your browser, so
-        your images are never uploaded.
+        Shrink photos, change their size, or convert between formats: open JPG, PNG, WebP, AVIF, HEIC, GIF, BMP, ICO,
+        TIFF and SVG, and save as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF. Everything happens in your browser,
+        so your images are never uploaded.
       </p>
-      <DropZone maxFiles={20} maxSizeMb={50} onFilesChange={setFiles} />
+      <DropZone maxFiles={20} maxSizeMb={50} accept={IMAGE_ACCEPT} onFilesChange={setFiles} />
 
       <Card className="mt-8 w-full max-w-2xl mx-4">
         <CardContent className="p-6 flex flex-col gap-5">
@@ -263,7 +252,9 @@ export default function ResizeConvertPage() {
               </label>
             )}
             {!useTarget && !lossy && (
-              <span className="text-xs text-muted-foreground">PNG is lossless, so only resizing makes it smaller.</span>
+              <span className="text-xs text-muted-foreground">
+                {formatInfo(format as ExportFormat).label} is lossless, so only resizing makes it smaller.
+              </span>
             )}
           </div>
         </CardContent>
@@ -282,7 +273,13 @@ export default function ResizeConvertPage() {
               <Card key={result.url}>
                 <CardContent className="p-3 flex items-center gap-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={result.url} alt={result.name} className="h-16 w-16 rounded-md object-cover bg-muted" />
+                  <img
+                    src={result.url}
+                    alt=""
+                    className="h-16 w-16 rounded-md object-cover bg-muted"
+                    // TIFF, ICO and PDF have no in-page preview in most browsers
+                    onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+                  />
                   <div className="flex-1 min-w-0 text-sm">
                     <p className="font-medium truncate">{result.name}</p>
                     <p className="text-muted-foreground">
