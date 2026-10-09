@@ -45,7 +45,7 @@ STRENGTHS: Dict[str, Strength] = {
 DEFAULT_STRENGTH = "medium"
 
 # Flat areas (sky, skin, gradients) get this share of the budget; noise shows most there
-FLAT_AREA_BUDGET = 0.35
+FLAT_AREA_BUDGET = 0.2
 
 
 def texture_mask(rgb: np.ndarray) -> np.ndarray:
