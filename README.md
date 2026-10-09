@@ -7,6 +7,7 @@ AI-powered image processing platform with background removal, background changin
 - **Background Removal**: Remove backgrounds from images using AI models ✅
 - **Background Changing**: Replace backgrounds with custom images or colors ✅
 - **Sky Replacement**: Change sky in landscape photos (preset or uploaded skies) ✅
+- **Prompt Reader**: Read the prompt, seed, model and settings saved in Stable Diffusion images (AUTOMATIC1111/Forge, ComfyUI, Fooocus, InvokeAI, NovelAI) ✅
 - **Outpainting**: Extend images beyond their original boundaries (coming soon)
 - **Batch Processing**: Process up to 10 images simultaneously with ZIP download
 - **Queue-based Processing**: Scalable job processing with RabbitMQ/SQS

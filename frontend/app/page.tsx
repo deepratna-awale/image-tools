@@ -62,6 +62,23 @@ export default function Home() {
               Background Changer
             </span>
           </Link>
+          <Link href="/prompt-reader" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/prompt-reader.png"
+                alt="Prompt Reader"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Prompt Reader
+            </span>
+          </Link>
           <Link href="/outpainting" className="flex flex-col items-center">
             <AspectRatio
               ratio={16 / 9}
