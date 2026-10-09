@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { baseName, createCanvas, downloadBlob, downloadZip, formatBytes, loadImage } from "@/lib/image-utils";
@@ -135,13 +136,12 @@ export default function ResizeConvertPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Resize, Compress &amp; Convert</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Shrink photos, change their size, or convert between formats: open JPG, PNG, WebP, AVIF, HEIC, GIF, BMP, ICO,
-        TIFF and SVG, and save as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF. Everything happens in your browser,
-        so your images are never uploaded.
-      </p>
+      <ToolHeader
+        href="/resize-convert"
+        description="Shrink photos, change their size, or convert between formats: open JPG, PNG, WebP, AVIF, HEIC, GIF, BMP, ICO, TIFF and SVG, and save as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF. Everything happens in your browser, so your images are never uploaded."
+      />
       <DropZone maxFiles={20} maxSizeMb={50} accept={IMAGE_ACCEPT} onFilesChange={setFiles} />
+
 
       <Card className="mt-8 w-full max-w-2xl mx-4">
         <CardContent className="p-6 flex flex-col gap-5">

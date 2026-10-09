@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -567,7 +568,7 @@ export default function BgRemoverPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center p-4">
-      <h1 className="text-2xl font-bold p-8">Background Remover</h1>
+      <ToolHeader href="/bg-remover" />
       
       <DropZone onFilesChange={setFiles} />
       
