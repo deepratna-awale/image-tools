@@ -8,6 +8,12 @@ AI-powered image processing platform with background removal, background changin
 - **Background Changing**: Replace backgrounds with custom images or colors ✅
 - **Sky Replacement**: Change sky in landscape photos (preset or uploaded skies) ✅
 - **Prompt Reader**: Read the prompt, seed, model and settings saved in Stable Diffusion images (AUTOMATIC1111/Forge, ComfyUI, Fooocus, InvokeAI, NovelAI) ✅
+- **Blur Background**: Portrait-mode blur using the background-removal cutout ✅
+- **Passport & ID Photo Maker**: Country presets on a plain background, plus a printable 6×4 in sheet ✅
+- **Resize, Compress & Convert**: opens JPG, PNG, WebP, AVIF, HEIC/HEIF, GIF, BMP, ICO, TIFF and SVG; saves as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF, with an optional target file size (runs in the browser) ✅
+- **Remove Photo Metadata**: Strips GPS, camera details and other EXIF/XMP data without re-encoding (runs in the browser) ✅
+- **Watermark & Add Text**: Text or logo watermarks on one image or a batch (runs in the browser) ✅
+- **Images to PDF**: Combine images into one PDF in any order (runs in the browser) ✅
 - **Outpainting**: Extend images beyond their original boundaries (coming soon)
 - **Batch Processing**: Process up to 10 images simultaneously with ZIP download
 - **Queue-based Processing**: Scalable job processing with RabbitMQ/SQS
