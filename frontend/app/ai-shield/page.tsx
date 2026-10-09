@@ -9,11 +9,11 @@ import { useToolJob } from "../components/use-tool-job";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Matches STRENGTHS in backend/services/ai_shield/cloak.py
+// Matches STRENGTHS in backend/services/ai_shield/cloak.py; times measured on the server for a 768×512 image
 const STRENGTHS = [
-  { id: "low", label: "Low", detail: "Barely visible. About a minute." },
-  { id: "medium", label: "Medium", detail: "Faint grain in flat areas. A few minutes." },
-  { id: "high", label: "High", detail: "Visible texture, strongest effect. Up to 10 minutes." },
+  { id: "low", label: "Low", detail: "Barely visible. About 2–3 minutes." },
+  { id: "medium", label: "Medium", detail: "Faint grain in places. About 5 minutes." },
+  { id: "high", label: "High", detail: "Visible texture, strongest effect. About 15 minutes." },
 ];
 
 const DOES = [
