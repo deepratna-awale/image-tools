@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, MapPin, ShieldCheck } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { downloadBlob, downloadZip, formatBytes } from "@/lib/image-utils";
@@ -100,11 +101,10 @@ export default function RemoveMetadataPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Remove Photo Metadata</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Photos can carry the exact place they were taken, your camera or phone model and more. Remove it before you
-        share. The picture itself isn&apos;t changed, and nothing is uploaded: it all happens in your browser.
-      </p>
+      <ToolHeader
+        href="/remove-metadata"
+        description="Photos can carry the exact place they were taken, your camera or phone model and more. Remove it before you share. The picture itself isn’t changed, and nothing is uploaded: it all happens in your browser."
+      />
       <DropZone maxFiles={20} maxSizeMb={50} onFilesChange={clean} />
 
       {isWorking && <p className="mt-6 text-sm text-muted-foreground">Cleaning...</p>}

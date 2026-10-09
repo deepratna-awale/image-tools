@@ -1,13 +1,11 @@
-import Image from "next/image";
-import Link from "next/link";
-import { ArrowUpRight, CodeXml, Gift, Layers, UserX } from "lucide-react";
-import { TOOLS } from "@/lib/tools";
-import { cn } from "@/lib/utils";
+import { CodeXml, Gift, Layers, UserX } from "lucide-react";
+import { toolGroups } from "@/lib/tools";
+import ToolTile from "./components/tool-tile";
 
 const HIGHLIGHTS = [
   { icon: Gift, title: "Free", text: "Every tool is free to use." },
   { icon: UserX, title: "No sign-up", text: "Open a tool and drop in an image." },
-  { icon: Layers, title: "Batch ready", text: "Remove backgrounds from 10 images at once." },
+  { icon: Layers, title: "Batch ready", text: "Resize, watermark or clean many images at once." },
   { icon: CodeXml, title: "Developer API", text: "Call background removal from your own apps." },
 ];
 
@@ -19,60 +17,33 @@ export default function Home() {
           Free · No sign-up · Works in your browser
         </span>
         <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-          Edit images in seconds with{" "}
+          Every image tool you need,{" "}
           <span className="bg-gradient-to-r from-primary via-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
-            AI tools
+            free
           </span>
         </h1>
         <p className="max-w-xl text-lg text-muted-foreground text-balance">
-          Remove or change backgrounds, swap skies and read Stable Diffusion prompts, all from one place.
+          Resize and convert, remove or blur backgrounds, make passport photos and more, all in one place.
         </p>
       </section>
 
-      <section className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-6">
-        {TOOLS.map(({ href, name, description, image, icon: Icon, comingSoon }, i) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              // Three cards on the first row, the rest centred under them
-              "lg:col-span-2",
-              i === 3 && TOOLS.length === 5 && "lg:col-start-2",
-              "group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm backdrop-blur transition duration-300",
-              "hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
-              comingSoon && "opacity-80"
-            )}
-          >
-            <div className="relative aspect-[3/2] overflow-hidden bg-muted">
-              <Image
-                src={image}
-                alt={name}
-                fill
-                sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
-                className={cn(
-                  "object-cover transition-transform duration-500 group-hover:scale-105",
-                  comingSoon && "grayscale-[40%]"
-                )}
-              />
-              {comingSoon && (
-                <span className="absolute top-3 right-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium shadow">
-                  Coming soon
-                </span>
-              )}
+      <div className="flex w-full flex-col gap-14">
+        {toolGroups().map(({ id, name, description, tools }) => (
+          <section key={id} aria-labelledby={`tools-${id}`} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <h2 id={`tools-${id}`} className="text-2xl font-semibold tracking-tight">
+                {name}
+              </h2>
+              <p className="text-muted-foreground">{description}</p>
             </div>
-            <div className="flex flex-1 flex-col gap-2 p-5">
-              <div className="flex items-center gap-2">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="size-4" />
-                </span>
-                <h2 className="font-semibold">{name}</h2>
-                <ArrowUpRight className="ml-auto size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
-              </div>
-              <p className="text-sm text-muted-foreground">{description}</p>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+              {tools.map((tool) => (
+                <ToolTile key={tool.href} tool={tool} />
+              ))}
             </div>
-          </Link>
+          </section>
         ))}
-      </section>
+      </div>
 
       <section className="mt-20 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (

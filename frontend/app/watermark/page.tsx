@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import ImagePicker from "../components/image-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -218,10 +219,10 @@ export default function WatermarkPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Watermark &amp; Add Text</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Put your name, a caption or your logo on one photo or a whole batch. It all happens in your browser.
-      </p>
+      <ToolHeader
+        href="/watermark"
+        description="Put your name, a caption or your logo on one photo or a whole batch. It all happens in your browser."
+      />
       <DropZone maxFiles={20} maxSizeMb={50} onFilesChange={setFiles} />
 
       <div className="mt-8 w-full max-w-5xl px-4 grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 items-start">
