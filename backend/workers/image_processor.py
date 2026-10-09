@@ -11,6 +11,7 @@ from core.messaging.sqs_adapter import SQSAdapter
 from services.background_removal.service import BackgroundRemovalService
 from services.background_changing.service import BackgroundChangingService
 from services.sky_replacement.service import SkyReplacementService
+from services.ai_shield.service import AIShieldService
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class ImageProcessorWorker:
             ServiceType.BACKGROUND_REMOVAL: BackgroundRemovalService(),
             ServiceType.BACKGROUND_CHANGING: BackgroundChangingService(),
             ServiceType.SKY_REPLACEMENT: SkyReplacementService(),
+            ServiceType.AI_SHIELD: AIShieldService(),
             # ServiceType.OUTPAINTING: OutpaintingService(),
         }
         

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
 // Backend tools this route may reach; everything else is a 404
-const TOOLS = new Set(["background-changing", "sky-replacement", "metadata-reading"]);
+const TOOLS = new Set(["background-changing", "sky-replacement", "metadata-reading", "ai-shield"]);
 
 async function proxy(req: NextRequest, path: string[]) {
   if (!TOOLS.has(path[0])) {

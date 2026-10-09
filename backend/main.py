@@ -13,6 +13,7 @@ from services.background_removal.router import router as background_removal_rout
 from services.background_changing.router import router as background_changing_router
 from services.sky_replacement.router import router as sky_replacement_router
 from services.metadata_reading.router import router as metadata_reading_router
+from services.ai_shield.router import router as ai_shield_router
 
 # Configure logging
 logging.basicConfig(
@@ -42,7 +43,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="AI-powered image processing API with background removal, background changing, sky replacement, and Stable Diffusion metadata reading",
+    description="AI-powered image processing API with background removal, background changing, sky replacement, Stable Diffusion metadata reading and AI Shield",
     lifespan=lifespan
 )
 
@@ -96,6 +97,7 @@ async def root():
                 "background_changing",
                 "sky_replacement",
                 "metadata_reading",
+                "ai_shield",
             ],
             "docs": "/docs",
             "health": "/health"
@@ -108,6 +110,7 @@ app.include_router(background_removal_router, prefix=settings.api_prefix)
 app.include_router(background_changing_router, prefix=settings.api_prefix)
 app.include_router(sky_replacement_router, prefix=settings.api_prefix)
 app.include_router(metadata_reading_router, prefix=settings.api_prefix)
+app.include_router(ai_shield_router, prefix=settings.api_prefix)
 app.include_router(api_keys_router, prefix=settings.api_prefix)
 
 # TODO: outpainting is shown as "coming soon" in the frontend
