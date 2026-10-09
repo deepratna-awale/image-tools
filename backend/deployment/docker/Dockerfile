@@ -23,8 +23,17 @@ ARG REMBG_MODEL=u2net
 # Sky segmentation model for sky swap (see sky_model_url in config/settings.py)
 ARG SKY_MODEL_URL=https://huggingface.co/Xenova/segformer-b0-finetuned-ade-512-512/resolve/main/onnx/model.onnx
 ENV SKY_MODEL_PATH=/opt/models/segformer-b0-ade.onnx
+# Stable Diffusion VAEs whose encoders AI Shield cloaks against (SD 1.x/2.x and SDXL, both MIT)
+ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae:sdxl-vae"
 RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
     && python -c "import urllib.request; urllib.request.urlretrieve('${SKY_MODEL_URL}', '${SKY_MODEL_PATH}')" \
+    && for vae in ${AI_SHIELD_VAES}; do \
+         repo="${vae%%:*}"; dir="/opt/models/${vae##*:}"; mkdir -p "$dir"; \
+         for file in config.json diffusion_pytorch_model.safetensors; do \
+           python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+             "https://huggingface.co/${repo}/resolve/main/${file}" "${dir}/${file}"; \
+         done; \
+       done \
     && mkdir -p "$NUMBA_CACHE_DIR" \
     && chmod -R a+rX /opt/models \
     && chmod -R a+rwX "$NUMBA_CACHE_DIR"

@@ -9,6 +9,7 @@ import {
   type LucideIcon,
   Scaling,
   ShieldCheck,
+  ShieldHalf,
   Stamp,
   Sunset,
 } from "lucide-react";
@@ -30,7 +31,11 @@ export interface Tool {
 export const CATEGORIES: { id: ToolCategory; name: string; description: string }[] = [
   { id: "ai", name: "Backgrounds & AI", description: "Cut out, replace or restyle what's behind your subject." },
   { id: "edit", name: "Edit & Convert", description: "Resize, convert and prepare images for wherever they're going." },
-  { id: "privacy", name: "Privacy & Metadata", description: "See or remove what's hidden inside an image file." },
+  {
+    id: "privacy",
+    name: "Privacy & Metadata",
+    description: "See or remove what's hidden inside an image file, and keep your work out of AI training.",
+  },
 ];
 
 /** Every tool on the site, in the order the home page and menus show them */
@@ -122,6 +127,14 @@ export const TOOLS: Tool[] = [
     description: "See the prompt, seed, model and settings saved inside a Stable Diffusion image.",
     image: "/tiles/prompt-reader.webp",
     icon: FileSearch,
+    category: "privacy",
+  },
+  {
+    href: "/ai-shield",
+    name: "AI Shield",
+    description: "Cloak your art against AI mimicry and tag it as not for AI training.",
+    image: "/tiles/ai-shield.webp",
+    icon: ShieldHalf,
     category: "privacy",
   },
 ];
