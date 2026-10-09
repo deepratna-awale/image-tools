@@ -3,7 +3,8 @@
 Other apps can remove image backgrounds through the same service the site uses.
 
 - **Base URL:** `https://imagetools.top/api/v1/background-removal`
-- **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`)
+- **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`).
+  Keys are created at [`https://imagetools.top/api-keys`](https://imagetools.top/api-keys) (admin only, see below).
 - **Input:** any common image format (JPEG, PNG, WebP…), up to 10 MB per image, up to 10 images per batch
 - **Output:** a transparent PNG (or a ZIP of PNGs for a batch)
 
@@ -28,15 +29,25 @@ Errors are JSON with a `detail` message:
 | --- | --- |
 | 400 | Not an image, or more than 10 files in a batch |
 | 401 | Missing or wrong API key |
-| 403 | The server has no API keys configured, so the public API is off |
+| 403 | No API keys exist on the server, so the public API is off |
 | 404 | Unknown job, or its result isn't ready |
 | 413 | Image over the size limit |
-| 429 | Rate limit hit; wait the number of seconds in `Retry-After` |
+| 429 | Per-minute or daily limit hit; wait the number of seconds in `Retry-After` |
 
 ## Limits
 
 Per API key, over a rolling minute: **20 submissions** (`POST`) and **300
 status/result requests** (`GET`). Poll about once a second, not faster.
+
+Per day (reset at 00:00 UTC), counted in images (a batch of 5 counts as 5):
+
+- **200 images per key** by default; a key can be given its own limit when it is created.
+- **1,000 images for all keys together.** Once that's reached every key gets 429 until
+  midnight UTC. This is the ceiling on how much server time other apps can take, so the
+  API can't run up a bill or slow the site down however a key is used.
+
+A daily-limit 429 says which limit was hit in `detail`, and `Retry-After` counts
+down to midnight UTC. Requests from the site's own pages are never counted.
 
 ## curl
 
@@ -109,24 +120,44 @@ can be read by its users.
 
 If a page must call the API directly, its origin has to be on the server's
 allowlist (`ALLOWED_ORIGINS`, below), and you should treat that key as public and
-give it its own entry in `API_KEYS` so it can be rotated on its own.
+give it its own key with a low daily limit so it can be revoked on its own.
+
+## Managing keys
+
+Open `/api-keys` on the site and enter the admin token (`ADMIN_TOKEN` in the
+server's `.env`; `deploy/oracle/setup.sh` generates one, and `grep ADMIN_TOKEN .env`
+shows it). From there you can:
+
+- **Create** a key with a name and, optionally, its own images-per-day limit. The full
+  key is shown once; only its SHA-256 hash is stored.
+- **See** each key's usage today, when it was last used, and the total against the
+  all-keys cap.
+- **Revoke** a key; it stops working on the next request.
+
+Only the admin can create keys: there is no public sign-up, so nobody else can mint
+keys to get around the limits. Wrong admin tokens are throttled to 10 a minute.
+Keys and daily counts live in `api_keys.sqlite3` on the storage volume, so they
+survive restarts and rebuilds. Without `ADMIN_TOKEN` the page is disabled.
 
 ## Server setup
 
-On the server, in the repo's `.env`:
+Optional settings in the repo's `.env` on the server:
 
 ```bash
-# One key per app, comma-separated. Generate each with: openssl rand -hex 24
+# Keys that work alongside the ones made on /api-keys (comma-separated)
 API_KEYS=3f9c...,a71b...
 # Only for pages that call the API from the browser (comma-separated origins)
 ALLOWED_ORIGINS=https://my-other-app.example
-# Optional, per key per minute
+# Per key per minute
 API_RATE_LIMIT_PER_MINUTE=20
 API_POLL_LIMIT_PER_MINUTE=300
+# Images per UTC day: default per key, all keys together, and how many keys may exist
+API_DAILY_LIMIT_PER_KEY=200
+API_DAILY_LIMIT_TOTAL=1000
+API_MAX_KEYS=20
 ```
 
 Then restart: `sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build`.
-To revoke a key, remove it from `API_KEYS` and restart.
 
 How it fits together: Caddy sends `/api/v1/background-removal/*` straight to the
 API container and marks those requests as public; the API checks the key and the

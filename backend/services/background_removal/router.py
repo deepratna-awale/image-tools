@@ -1,8 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from typing import List
 import logging
 
 from core.job_router import add_job_routes, read_image, read_images
+from core.public_api import charge_images
 from core.models.responses import JobSubmissionResponse, BatchJobSubmissionResponse
 from .service import BackgroundRemovalService
 
@@ -15,10 +16,11 @@ bg_service = BackgroundRemovalService()
 
 
 @router.post("/process", response_model=JobSubmissionResponse)
-async def queue_background_removal(file: UploadFile = File(...)):
+async def queue_background_removal(request: Request, file: UploadFile = File(...)):
     """Queue background removal job"""
     try:
         file_content, filename = await read_image(file)
+        charge_images(request, 1)
 
         # Submit job
         job = await bg_service.submit_job(file_content, filename)
@@ -38,10 +40,11 @@ async def queue_background_removal(file: UploadFile = File(...)):
 
 
 @router.post("/process-batch", response_model=BatchJobSubmissionResponse)
-async def queue_batch_background_removal(files: List[UploadFile] = File(...)):
+async def queue_batch_background_removal(request: Request, files: List[UploadFile] = File(...)):
     """Queue batch background removal job"""
     try:
         files_data = await read_images(files)
+        charge_images(request, len(files_data))
 
         # Submit batch job
         batch_job = await bg_service.submit_batch_job(files_data)
