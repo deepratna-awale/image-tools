@@ -313,7 +313,7 @@ See `backend/deployment/aws/DEPLOYMENT_GUIDE.md`. Note the shared-state limitati
 
 - Environment variables for sensitive data
 - File upload validation and size limits
-- Public API (background removal) behind API keys with per-key rate limits; see [docs/API.md](./docs/API.md)
+- Public API (background removal) behind API keys with per-key rate limits and daily quotas, managed from the /api-keys page; see [docs/API.md](./docs/API.md)
 - CORS allowlist via `ALLOWED_ORIGINS` (empty by default; the frontend calls the API server-side)
 
 ## 🛠️ Development
