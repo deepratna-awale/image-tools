@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-interface HealthStatus {
-  status: string;
-  version: string;
-  services: Record<string, string>;
-}
-
 export default function HealthCheck() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
@@ -20,8 +13,6 @@ export default function HealthCheck() {
     try {
       const response = await fetch("/api/health");
       if (response.ok) {
-        const data = await response.json();
-        setHealth(data);
         setError("");
       } else {
         setError("Backend not responding");
@@ -32,31 +23,15 @@ export default function HealthCheck() {
     }
   };
 
-  if (error) {
-    return (
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <strong>Backend Status:</strong> {error}
-        <button 
-          onClick={checkHealth}
-          className="ml-2 underline hover:no-underline"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (!health) {
-    return (
-      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-        <strong>Backend Status:</strong> Checking...
-      </div>
-    );
-  }
+  // Only speak up when the tools can't reach the backend
+  if (!error) return null;
 
   return (
-    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-      <strong>Backend Status:</strong> {health.status} (v{health.version})
+    <div className="mx-auto mt-4 flex max-w-6xl items-center justify-center gap-2 rounded-full border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+      The tools are offline right now. Please try again in a moment.
+      <button onClick={checkHealth} className="font-medium underline underline-offset-2 hover:no-underline">
+        Retry
+      </button>
     </div>
   );
 }

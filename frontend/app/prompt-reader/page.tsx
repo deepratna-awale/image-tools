@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -133,11 +134,10 @@ export default function PromptReaderPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Prompt Reader</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        See the prompt, seed, model and settings saved in images made with AUTOMATIC1111, Forge, ComfyUI, Fooocus,
-        InvokeAI or NovelAI.
-      </p>
+      <ToolHeader
+        href="/prompt-reader"
+        description="See the prompt, seed, model and settings saved in images made with AUTOMATIC1111, Forge, ComfyUI, Fooocus, InvokeAI or NovelAI."
+      />
       <DropZone maxFiles={1} onFilesChange={(files) => readImage(files[0])} />
 
       {isReading && <p className="mt-6 text-sm text-muted-foreground">Reading metadata...</p>}
