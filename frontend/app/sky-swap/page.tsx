@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import ImagePicker from "../components/image-picker";
 import ToolResult from "../components/tool-result";
 import { useToolJob } from "../components/use-tool-job";
@@ -36,7 +37,7 @@ export default function SkySwapPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Sky Swap</h1>
+      <ToolHeader href="/sky-swap" />
       <DropZone maxFiles={1} onFilesChange={(files) => setPhoto(files[0] ?? null)} />
 
       <div className="mt-8 flex flex-col items-center gap-3">

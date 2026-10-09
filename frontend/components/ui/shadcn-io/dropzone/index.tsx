@@ -179,10 +179,10 @@ export const DropzoneEmptyState = ({ children }: DropzoneEmptyStateProps) => {
 
   return (
     <>
-      <div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-        <UploadIcon size={16} />
+      <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <UploadIcon size={20} />
       </div>
-      <p className="my-2 w-full truncate font-medium text-sm">
+      <p className="my-2 w-full truncate font-medium text-base">
         Upload {maxFiles === 1 ? 'a file' : 'files'}
       </p>
       <p className="w-full truncate text-muted-foreground text-xs">

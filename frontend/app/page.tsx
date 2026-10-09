@@ -1,211 +1,61 @@
-import Image from "next/image";
-import Link from "next/link";
-import { AspectRatio } from "../components/ui/aspect-ratio";
+import { CodeXml, Gift, Layers, UserX } from "lucide-react";
+import { toolGroups } from "@/lib/tools";
+import ToolTile from "./components/tool-tile";
+
+const HIGHLIGHTS = [
+  { icon: Gift, title: "Free", text: "Every tool is free to use." },
+  { icon: UserX, title: "No sign-up", text: "Open a tool and drop in an image." },
+  { icon: Layers, title: "Batch ready", text: "Resize, watermark or clean many images at once." },
+  { icon: CodeXml, title: "Developer API", text: "Call background removal from your own apps." },
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-2 pb-24 gap-18 sm:p-3 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[12px] items-center w-full max-w-5xl">
-        <h1 className="text-center w-full text-6xl">Image Tools</h1>
-        <p className="text-muted-foreground text-center w-full text-lg">
-          Use popular image tools in your browser, free, no sign-up required.
+    <main className="mx-auto flex w-full max-w-6xl flex-col items-center px-4">
+      <section className="flex flex-col items-center gap-6 pt-16 pb-14 text-center sm:pt-24">
+        <span className="rounded-full border border-border/70 bg-background/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
+          Free · No sign-up · Works in your browser
+        </span>
+        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+          Every image tool you need,{" "}
+          <span className="bg-gradient-to-r from-primary via-violet-500 to-fuchsia-500 bg-clip-text text-transparent">
+            free
+          </span>
+        </h1>
+        <p className="max-w-xl text-lg text-muted-foreground text-balance">
+          Resize and convert, remove or blur backgrounds, make passport photos and more, all in one place.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 w-full max-w-4xl mx-auto">
-          <Link href="/bg-remover" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/bg-remover.png"
-                alt="Background Remover"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Background Remover
-            </span>
-          </Link>
-          <Link href="/sky-swap" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/sky-swap.png"
-                alt="Sky Swap"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Sky Swap
-            </span>
-          </Link>
-          <Link href="/bg-changer" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/bg-changer.png"
-                alt="Background Changer"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Background Changer
-            </span>
-          </Link>
-          <Link href="/prompt-reader" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/prompt-reader.png"
-                alt="Prompt Reader"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Prompt Reader
-            </span>
-          </Link>
-          <Link href="/resize-convert" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/resize-convert.webp"
-                alt="Resize, Compress and Convert"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Resize, Compress &amp; Convert
-            </span>
-          </Link>
-          <Link href="/blur-background" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/blur-background.webp"
-                alt="Blur Background"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Blur Background
-            </span>
-          </Link>
-          <Link href="/passport-photo" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/passport-photo.webp"
-                alt="Passport and ID Photo"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Passport &amp; ID Photo
-            </span>
-          </Link>
-          <Link href="/remove-metadata" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/remove-metadata.webp"
-                alt="Remove Photo Metadata"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Remove Photo Metadata
-            </span>
-          </Link>
-          <Link href="/watermark" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/watermark.webp"
-                alt="Watermark and Add Text"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Watermark &amp; Add Text
-            </span>
-          </Link>
-          <Link href="/images-to-pdf" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/images-to-pdf.webp"
-                alt="Images to PDF"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Images to PDF
-            </span>
-          </Link>
-          <Link href="/outpainting" className="flex flex-col items-center">
-            <AspectRatio
-              ratio={16 / 9}
-              className="bg-muted rounded-lg overflow-hidden w-full"
-            >
-              <Image
-                className="hover:scale-110 transition-transform duration-300"
-                src="/outpainting.webp"
-                alt="Outpainting"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-              <span className="absolute top-3 right-3 rounded-full bg-background/90 px-3 py-1 text-xs font-medium shadow">
-                Coming soon
-              </span>
-            </AspectRatio>
-            <span className="mt-3 text-base font-medium text-center">
-              Outpainting
-            </span>
-          </Link>
-        </div>
-      </main>
-      <footer className="flex gap-[24px] flex-wrap items-center justify-center w-full mt-12">
-        Footer Text
-      </footer>
-    </div>
+      </section>
+
+      <div className="flex w-full flex-col gap-14">
+        {toolGroups().map(({ id, name, description, tools }) => (
+          <section key={id} aria-labelledby={`tools-${id}`} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1">
+              <h2 id={`tools-${id}`} className="text-2xl font-semibold tracking-tight">
+                {name}
+              </h2>
+              <p className="text-muted-foreground">{description}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+              {tools.map((tool) => (
+                <ToolTile key={tool.href} tool={tool} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <section className="mt-20 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
+          <div key={title} className="flex gap-3 rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur">
+            <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{title}</span>
+              <span className="text-sm text-muted-foreground">{text}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+    </main>
   );
 }
