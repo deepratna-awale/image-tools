@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import ToolResult from "../components/tool-result";
 import { useCutout } from "../components/use-cutout";
 import { Button } from "@/components/ui/button";
@@ -43,10 +44,10 @@ export default function BlurBackgroundPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Blur Background</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Give any photo a portrait-mode look: the subject stays sharp and the background melts into a soft blur.
-      </p>
+      <ToolHeader
+        href="/blur-background"
+        description="Give any photo a portrait-mode look: the subject stays sharp and the background melts into a soft blur."
+      />
       <DropZone
         maxFiles={1}
         onFilesChange={(files) => {

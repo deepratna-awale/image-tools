@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Download, X } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { canvasToBlob, createCanvas, downloadBlob, formatBytes, loadImage } from "@/lib/image-utils";
@@ -125,10 +126,10 @@ export default function ImagesToPdfPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Images to PDF</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Combine photos, scans or screenshots into one PDF, in the order you choose. Your files stay in your browser.
-      </p>
+      <ToolHeader
+        href="/images-to-pdf"
+        description="Combine photos, scans or screenshots into one PDF, in the order you choose. Your files stay in your browser."
+      />
       <DropZone maxFiles={50} maxSizeMb={50} onFilesChange={setFiles} />
 
       {items.length > 0 && (

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import ToolHeader from "../components/tool-header";
 import { useCutout } from "../components/use-cutout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -227,11 +228,10 @@ export default function PassportPhotoPage() {
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
-      <h1 className="text-2xl font-bold p-8">Passport &amp; ID Photo Maker</h1>
-      <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Upload a front-facing photo against any background. You get a correctly sized photo on a plain background, plus a
-        6×4 in sheet to print at any photo shop.
-      </p>
+      <ToolHeader
+        href="/passport-photo"
+        description="Upload a front-facing photo against any background. You get a correctly sized photo on a plain background, plus a 6×4 in sheet to print at any photo shop."
+      />
       <DropZone
         maxFiles={1}
         onFilesChange={(files) => {
