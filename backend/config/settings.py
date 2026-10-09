@@ -91,6 +91,13 @@ class Settings(BaseSettings):
     # Per key, over a rolling minute: job submissions, and status/result requests
     api_rate_limit_per_minute: int = 20
     api_poll_limit_per_minute: int = 300
+    # Images per UTC day: per key (unless set when the key is created), and across all
+    # keys together. The total is the ceiling on how much CPU other apps can use.
+    api_daily_limit_per_key: int = 200
+    api_daily_limit_total: int = 1000
+    api_max_keys: int = 20
+    # Unlocks the /api-keys page for creating and revoking keys. Empty disables it.
+    admin_token: str = ""
 
     # CORS: browser origins allowed to call the API directly, JSON or comma-separated.
     # The site's own frontend calls the API server-side, so it needs no entry here.

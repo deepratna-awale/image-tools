@@ -45,6 +45,13 @@ if [ ! -f .env ]; then
     echo "Wrote .env for $site"
 fi
 
+# Unlocks the /api-keys page; added on re-runs too, for servers set up before it existed
+if ! grep -q '^ADMIN_TOKEN=.' .env; then
+    sed -i '/^#\? *ADMIN_TOKEN=/d' .env
+    echo "ADMIN_TOKEN=$(openssl rand -hex 24)" >> .env
+    echo "Added ADMIN_TOKEN to .env for the /api-keys page (read it with: grep ADMIN_TOKEN .env)"
+fi
+
 sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
 
 site="$(grep '^SITE_ADDRESS=' .env | cut -d= -f2-)"
