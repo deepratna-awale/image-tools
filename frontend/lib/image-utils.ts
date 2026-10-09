@@ -1,5 +1,7 @@
 // Browser-side image helpers for the tools that never leave the user's device
 
+import { decodeImage } from "./formats";
+
 export type OutputFormat = "image/jpeg" | "image/png" | "image/webp";
 
 export const FORMAT_EXTENSIONS: Record<OutputFormat, string> = {
@@ -8,14 +10,8 @@ export const FORMAT_EXTENSIONS: Record<OutputFormat, string> = {
   "image/webp": "webp",
 };
 
-/** Decodes a file, applying its EXIF rotation */
-export async function loadImage(file: Blob): Promise<ImageBitmap> {
-  try {
-    return await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    throw new Error("This browser can't open that image. Try a JPG, PNG or WebP.");
-  }
-}
+/** Decodes a file in any supported format, applying its EXIF rotation */
+export const loadImage = decodeImage;
 
 export function createCanvas(width: number, height: number) {
   const canvas = document.createElement("canvas");

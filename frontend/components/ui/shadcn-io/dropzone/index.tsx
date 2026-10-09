@@ -162,16 +162,16 @@ export const DropzoneEmptyState = ({ children }: DropzoneEmptyStateProps) => {
 
   if (accept) {
     caption += 'Accepts ';
-    // image/jpeg -> JPG, so the list reads like file types people know
-    const types = Object.keys(accept).map((type) =>
-      type.split('/').pop()!.replace('jpeg', 'jpg').toUpperCase()
+    // Short names like JPG and HEIC rather than MIME types
+    const names = Object.entries(accept).map(([type, extensions]) =>
+      (extensions[0]?.replace('.', '') ?? type.split('/')[1]).toUpperCase()
     );
-    caption += new Intl.ListFormat('en').format([...new Set(types)]);
+    caption += new Intl.ListFormat('en').format([...new Set(names)]);
   }
 
-  if (minSize && maxSize) {
+  if (minSize && minSize > 1 && maxSize) {
     caption += ` between ${renderBytes(minSize)} and ${renderBytes(maxSize)}`;
-  } else if (minSize) {
+  } else if (minSize && minSize > 1) {
     caption += ` at least ${renderBytes(minSize)}`;
   } else if (maxSize) {
     caption += ` less than ${renderBytes(maxSize)}`;
