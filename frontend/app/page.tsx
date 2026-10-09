@@ -79,6 +79,108 @@ export default function Home() {
               Prompt Reader
             </span>
           </Link>
+          <Link href="/resize-convert" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/resize-convert.webp"
+                alt="Resize, Compress and Convert"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Resize, Compress &amp; Convert
+            </span>
+          </Link>
+          <Link href="/blur-background" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/blur-background.webp"
+                alt="Blur Background"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Blur Background
+            </span>
+          </Link>
+          <Link href="/passport-photo" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/passport-photo.webp"
+                alt="Passport and ID Photo"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Passport &amp; ID Photo
+            </span>
+          </Link>
+          <Link href="/remove-metadata" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/remove-metadata.webp"
+                alt="Remove Photo Metadata"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Remove Photo Metadata
+            </span>
+          </Link>
+          <Link href="/watermark" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/watermark.webp"
+                alt="Watermark and Add Text"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Watermark &amp; Add Text
+            </span>
+          </Link>
+          <Link href="/images-to-pdf" className="flex flex-col items-center">
+            <AspectRatio
+              ratio={16 / 9}
+              className="bg-muted rounded-lg overflow-hidden w-full"
+            >
+              <Image
+                className="hover:scale-110 transition-transform duration-300"
+                src="/images-to-pdf.webp"
+                alt="Images to PDF"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </AspectRatio>
+            <span className="mt-3 text-base font-medium text-center">
+              Images to PDF
+            </span>
+          </Link>
           <Link href="/outpainting" className="flex flex-col items-center">
             <AspectRatio
               ratio={16 / 9}

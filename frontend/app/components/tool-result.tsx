@@ -9,10 +9,12 @@ interface ToolResultProps {
   original: File;
   resultUrl: string;
   downloadName: string;
+  /** Saves the result some other way, such as in a format the user picked */
+  onDownload?: () => void;
 }
 
 /** Original and processed image side by side, with a download button */
-export default function ToolResult({ original, resultUrl, downloadName }: ToolResultProps) {
+export default function ToolResult({ original, resultUrl, downloadName, onDownload }: ToolResultProps) {
   const originalUrl = useMemo(() => URL.createObjectURL(original), [original]);
 
   useEffect(() => {
@@ -36,12 +38,19 @@ export default function ToolResult({ original, resultUrl, downloadName }: ToolRe
         ))}
       </div>
       <div className="flex justify-center mt-4">
-        <Button asChild className="rounded-full gap-2">
-          <a href={resultUrl} download={downloadName}>
+        {onDownload ? (
+          <Button className="rounded-full gap-2" onClick={onDownload}>
             <Download className="h-4 w-4" />
             Download
-          </a>
-        </Button>
+          </Button>
+        ) : (
+          <Button asChild className="rounded-full gap-2">
+            <a href={resultUrl} download={downloadName}>
+              <Download className="h-4 w-4" />
+              Download
+            </a>
+          </Button>
+        )}
       </div>
     </div>
   );
