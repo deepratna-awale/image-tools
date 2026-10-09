@@ -10,9 +10,11 @@ import {
 interface DropZoneProps {
   onFilesChange?: (files: File[]) => void;
   maxFiles?: number;
+  /** Largest file accepted, in MB. Tools that run in the browser can take bigger files */
+  maxSizeMb?: number;
 }
 
-const DropZone = ({ onFilesChange, maxFiles = 10 }: DropZoneProps) => {
+const DropZone = ({ onFilesChange, maxFiles = 10, maxSizeMb = 10 }: DropZoneProps) => {
   const [files, setFiles] = useState<File[] | undefined>();
 
   const handleDrop = (files: File[]) => {
@@ -27,7 +29,7 @@ const DropZone = ({ onFilesChange, maxFiles = 10 }: DropZoneProps) => {
     <div className="flex w-full items-center justify-center px-4">
       <Dropzone
         className="min-h-56 w-full max-w-3xl whitespace-normal items-center justify-center rounded-2xl border-2 border-dashed bg-card/60 px-4 sm:px-8 backdrop-blur transition-colors hover:border-primary/50 hover:bg-card"
-        maxSize={1024 * 1024 * 10}
+        maxSize={1024 * 1024 * maxSizeMb}
         minSize={1024}
         maxFiles={maxFiles}
         accept={{ "image/jpg": [],
