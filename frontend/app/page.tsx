@@ -29,12 +29,15 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {TOOLS.map(({ href, name, description, image, icon: Icon, comingSoon }) => (
+      <section className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-6">
+        {TOOLS.map(({ href, name, description, image, icon: Icon, comingSoon }, i) => (
           <Link
             key={href}
             href={href}
             className={cn(
+              // Three cards on the first row, the rest centred under them
+              "lg:col-span-2",
+              i === 3 && TOOLS.length === 5 && "lg:col-start-2",
               "group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/80 shadow-sm backdrop-blur transition duration-300",
               "hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10",
               comingSoon && "opacity-80"
