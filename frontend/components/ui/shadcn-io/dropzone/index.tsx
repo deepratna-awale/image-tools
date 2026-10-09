@@ -162,12 +162,16 @@ export const DropzoneEmptyState = ({ children }: DropzoneEmptyStateProps) => {
 
   if (accept) {
     caption += 'Accepts ';
-    caption += new Intl.ListFormat('en').format(Object.keys(accept));
+    // Short names like JPG and HEIC rather than MIME types
+    const names = Object.entries(accept).map(([type, extensions]) =>
+      (extensions[0]?.replace('.', '') ?? type.split('/')[1]).toUpperCase()
+    );
+    caption += new Intl.ListFormat('en').format([...new Set(names)]);
   }
 
-  if (minSize && maxSize) {
+  if (minSize && minSize > 1 && maxSize) {
     caption += ` between ${renderBytes(minSize)} and ${renderBytes(maxSize)}`;
-  } else if (minSize) {
+  } else if (minSize && minSize > 1) {
     caption += ` at least ${renderBytes(minSize)}`;
   } else if (maxSize) {
     caption += ` less than ${renderBytes(maxSize)}`;

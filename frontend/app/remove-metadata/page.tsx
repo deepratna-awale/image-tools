@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, MapPin, ShieldCheck } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import { IMAGE_ACCEPT } from "@/lib/formats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { downloadBlob, downloadZip, formatBytes } from "@/lib/image-utils";
@@ -10,6 +11,7 @@ import { stripMetadata, webpExif } from "@/lib/strip-metadata";
 
 interface Cleaned {
   name: string;
+  resaved: boolean;
   blob: Blob;
   found: [string, string][];
   location: { latitude: number; longitude: number } | null;
@@ -76,12 +78,13 @@ export default function RemoveMetadataPage() {
     for (const file of files) {
       try {
         const tags = await readMetadata(file);
-        const blob = await stripMetadata(file);
+        const { blob, name, resaved } = await stripMetadata(file);
         const latitude = tags.latitude as number | undefined;
         const longitude = tags.longitude as number | undefined;
         cleaned.push({
-          name: file.name,
+          name,
           blob,
+          resaved,
           found: SENSITIVE.filter(([key]) => tags[key] !== undefined && tags[key] !== "").map(([key, label]) => [
             label,
             display(tags[key]),
@@ -103,9 +106,10 @@ export default function RemoveMetadataPage() {
       <h1 className="text-2xl font-bold p-8">Remove Photo Metadata</h1>
       <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
         Photos can carry the exact place they were taken, your camera or phone model and more. Remove it before you
-        share. The picture itself isn&apos;t changed, and nothing is uploaded: it all happens in your browser.
+        share. JPG, PNG, WebP, GIF and SVG files are cleaned without touching the picture, and nothing is uploaded: it
+        all happens in your browser.
       </p>
-      <DropZone maxFiles={20} maxSizeMb={50} onFilesChange={clean} />
+      <DropZone maxFiles={20} maxSizeMb={50} accept={IMAGE_ACCEPT} onFilesChange={clean} />
 
       {isWorking && <p className="mt-6 text-sm text-muted-foreground">Cleaning...</p>}
       {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
@@ -124,6 +128,7 @@ export default function RemoveMetadataPage() {
                         ? `Removed ${result.fieldCount} hidden detail${result.fieldCount === 1 ? "" : "s"}`
                         : "No hidden details found"}{" "}
                       · {formatBytes(result.before)} → {formatBytes(result.blob.size)}
+                      {result.resaved && ` · re-saved as ${result.name.split(".").pop()?.toUpperCase()}`}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" className="gap-2" onClick={() => downloadBlob(result.blob, result.name)}>

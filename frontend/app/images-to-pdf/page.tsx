@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Download, X } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import { IMAGE_ACCEPT } from "@/lib/formats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { canvasToBlob, createCanvas, downloadBlob, formatBytes, loadImage } from "@/lib/image-utils";
@@ -40,7 +41,7 @@ async function prepare(file: File) {
   const { canvas, ctx } = createCanvas(image.width * scale, image.height * scale);
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
   image.close();
-  const keepTransparency = file.type === "image/png" || file.type === "image/webp";
+  const keepTransparency = file.type !== "image/jpeg";
   const hasAlpha = keepTransparency && ctx.getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v < 255);
   const blob = hasAlpha ? await canvasToBlob(canvas, "image/png") : await canvasToBlob(canvas, "image/jpeg", 0.9);
   return { bytes: new Uint8Array(await blob.arrayBuffer()), png: hasAlpha, width: canvas.width, height: canvas.height };
@@ -127,16 +128,23 @@ export default function ImagesToPdfPage() {
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
       <h1 className="text-2xl font-bold p-8">Images to PDF</h1>
       <p className="-mt-6 mb-6 max-w-xl px-4 text-center text-sm text-muted-foreground">
-        Combine photos, scans or screenshots into one PDF, in the order you choose. Your files stay in your browser.
+        Combine photos, scans or screenshots (JPG, PNG, WebP, HEIC, AVIF, TIFF, GIF and more) into one PDF, in the order you choose. Your files stay in your browser.
       </p>
-      <DropZone maxFiles={50} maxSizeMb={50} onFilesChange={setFiles} />
+      <DropZone maxFiles={50} maxSizeMb={50} accept={IMAGE_ACCEPT} onFilesChange={setFiles} />
 
       {items.length > 0 && (
         <div className="mt-8 w-full max-w-3xl px-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {items.map((item, i) => (
             <div key={item.url} className="relative flex flex-col gap-1 rounded-lg border bg-card p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.url} alt={item.file.name} className="aspect-[3/4] w-full rounded object-cover bg-muted" />
+              <img
+                src={item.url}
+                alt={item.file.name}
+                title={item.file.name}
+                className="aspect-[3/4] w-full rounded object-cover bg-muted"
+                // HEIC and TIFF have no in-page preview in most browsers; they still go into the PDF
+                onError={(e) => (e.currentTarget.style.visibility = "hidden")}
+              />
               <span className="text-xs text-muted-foreground">Page {i + 1}</span>
               <div className="flex justify-between">
                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move earlier">

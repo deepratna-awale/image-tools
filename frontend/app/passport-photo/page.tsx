@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download } from "lucide-react";
 import DropZone from "../components/drop-zone";
+import { ExportFormat, IMAGE_ACCEPT, encodeCanvas, toServerFormat } from "@/lib/formats";
+import FormatSelect from "../components/format-select";
 import { useCutout } from "../components/use-cutout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -174,11 +176,13 @@ const sliderClass = "flex items-center gap-3 text-sm";
 
 export default function PassportPhotoPage() {
   const [photo, setPhoto] = useState<File | null>(null);
+  const [convertError, setConvertError] = useState("");
   const [presetIndex, setPresetIndex] = useState(0);
   const [background, setBackground] = useState(BACKGROUNDS[0].color);
   const [adjust, setAdjust] = useState<Adjust>({ zoom: 1, x: 0, y: 0 });
   const [subject, setSubject] = useState<{ image: ImageBitmap; head: Head } | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [saveAs, setSaveAs] = useState<ExportFormat>("jpg");
   const { run, reset, cutout, isProcessing, status, error } = useCutout();
   const preset = PRESETS[presetIndex];
 
@@ -218,8 +222,10 @@ export default function PassportPhotoPage() {
   const download = async (sheet: boolean) => {
     if (!finalPhoto || !photo) return;
     const canvas = sheet ? renderSheet(finalPhoto) : finalPhoto;
-    const blob = await setJpegDpi(await canvasToBlob(canvas, "image/jpeg", 0.95), DPI);
-    downloadBlob(blob, `${baseName(photo.name)}-${sheet ? "print-sheet" : "passport-photo"}.jpg`);
+    // PDFs come out at the exact printed size
+    let blob = await encodeCanvas(canvas, saveAs, 0.95, DPI);
+    if (saveAs === "jpg") blob = await setJpegDpi(blob, DPI);
+    downloadBlob(blob, `${baseName(photo.name)}-${sheet ? "print-sheet" : "passport-photo"}.${saveAs}`);
   };
 
   const setSlider = (key: keyof Adjust) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -234,13 +240,24 @@ export default function PassportPhotoPage() {
       </p>
       <DropZone
         maxFiles={1}
-        onFilesChange={(files) => {
-          setPhoto(files[0] ?? null);
+        maxSizeMb={50}
+        accept={IMAGE_ACCEPT}
+        onFilesChange={async (files) => {
+          setPhoto(null);
           setSubject(null);
           setAdjust({ zoom: 1, x: 0, y: 0 });
           reset();
+          setConvertError("");
+          if (!files[0]) return;
+          try {
+            // HEIC, TIFF and other formats are converted here so the server can read them
+            setPhoto(await toServerFormat(files[0]));
+          } catch (e) {
+            setConvertError(e instanceof Error ? e.message : String(e));
+          }
         }}
       />
+      {convertError && <p className="mt-3 text-sm text-destructive">{convertError}</p>}
 
       <Card className="mt-8 w-full max-w-2xl mx-4">
         <CardContent className="p-6 flex flex-col gap-5">
@@ -320,6 +337,7 @@ export default function PassportPhotoPage() {
             <Button variant="ghost" size="sm" className="self-start" onClick={() => setAdjust({ zoom: 1, x: 0, y: 0 })}>
               Reset position
             </Button>
+            <FormatSelect value={saveAs} onChange={setSaveAs} formats={["jpg", "png", "pdf", "tiff", "webp"]} />
             <div className="flex flex-wrap gap-2">
               <Button className="rounded-full gap-2" onClick={() => download(false)}>
                 <Download className="h-4 w-4" />
