@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "./components/theme-provider";
 import { Navbar } from "./components/navbar";
-import HealthCheck from "./components/health-check";
 import "./globals.css";
 import AnimatedGrid from "./components/animated-grid";
 import { Footer } from "./components/footer";
@@ -41,9 +40,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
-          <div className="px-4">
-            <HealthCheck />
-          </div>
           <div className="flex-1">{children}</div>
           <Footer />
         </ThemeProvider>
