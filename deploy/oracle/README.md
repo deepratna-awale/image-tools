@@ -35,7 +35,7 @@ SSH in with the key from step 1 (the user is `ubuntu`):
 ssh -i path/to/private.key ubuntu@<public-ip>
 ```
 
-Then clone the repo and run the setup script. The repo is private, so when git asks for a password, use a GitHub [fine-grained token](https://github.com/settings/personal-access-tokens/new) with read-only **Contents** access to this repo.
+Then clone the repo and run the setup script:
 
 ```bash
 git clone https://github.com/deepratna-awale/image-tools.git
