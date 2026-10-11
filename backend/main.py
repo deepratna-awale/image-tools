@@ -2,11 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import asyncio
 import logging
 import uvicorn
 
 from config.settings import settings
 from core.public_api import PublicAPIMiddleware
+from core import retention
 from core.api_keys_router import router as api_keys_router
 from core.models.responses import HealthCheckResponse, APIResponse
 from services.background_removal.router import router as background_removal_router
@@ -29,14 +31,16 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     
-    # Initialize services here if needed
-    # await initialize_services()
-    
+    sweeper = None
+    if settings.storage_type == "local" and settings.file_retention_hours > 0:
+        sweeper = asyncio.create_task(retention.run_forever())
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down application")
-    # Clean up resources here if needed
+    if sweeper:
+        sweeper.cancel()
 
 
 # Create FastAPI app

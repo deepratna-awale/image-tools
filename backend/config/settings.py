@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # Processing
     max_file_size: int = 10 * 1024 * 1024  # 10MB
     job_result_ttl: int = 3600  # 1 hour
+    # Uploaded images, results and job records older than this are deleted (hourly
+    # sweep in the API; local storage only). The privacy policy quotes this number.
+    file_retention_hours: float = 24
     max_queue_size: int = 1000
     worker_concurrency: int = 1
     rembg_model: str = "u2net"

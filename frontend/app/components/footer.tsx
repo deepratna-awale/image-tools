@@ -29,8 +29,17 @@ export function Footer() {
           ))}
         </div>
       </div>
-      <div className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Image Tools
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/60 py-4 text-xs text-muted-foreground">
+        <span>© {new Date().getFullYear()} Image Tools</span>
+        <Link href="/privacy" className="transition-colors hover:text-foreground">
+          Privacy
+        </Link>
+        <Link href="/terms" className="transition-colors hover:text-foreground">
+          Terms
+        </Link>
+        <a href="https://github.com/deepratna-awale/image-tools" className="transition-colors hover:text-foreground">
+          GitHub
+        </a>
       </div>
     </footer>
   );
