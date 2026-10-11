@@ -2,7 +2,15 @@
 # Only the frontend is published; it proxies all API calls to the backend.
 name: image-tools
 
+# Container logs rotate at 3 x 10 MB, as the privacy policy says
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
 x-backend: &backend
+  logging: *logging
   build:
     context: ./backend
     dockerfile: deployment/docker/Dockerfile
@@ -31,6 +39,7 @@ services:
       context: ./frontend
     image: image-tools-frontend:latest
     restart: unless-stopped
+    logging: *logging
     environment:
       BACKEND_URL: http://api:8000
     ports:
@@ -54,6 +63,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
+    logging: *logging
     # Reads RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS from .env
     env_file: .env
     volumes:

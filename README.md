@@ -192,4 +192,4 @@ Browser-only tools skip steps 1 and 2.
 
 ## License
 
-MIT.
+[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).
