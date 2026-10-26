@@ -148,6 +148,8 @@ The frontend needs `BACKEND_URL` (default `http://localhost:8000`). API key limi
 
 The sky-swap model (SegFormer-b0 fine-tuned on ADE20K) is under NVIDIA's non-commercial licence. Point `SKY_MODEL_URL` (a build arg in `backend/deployment/docker/Dockerfile`) at a commercially licensed model before running the site commercially.
 
+The background-removal model (BRIA RMBG 2.0) is under CC BY-NC 4.0, also non-commercial. Set the `REMBG_MODEL` build arg and env var to `isnet-general-use` or `birefnet-general` for a permissive alternative.
+
 ## Project structure
 
 ```
@@ -192,4 +194,4 @@ Browser-only tools skip steps 1 and 2.
 
 ## License
 
-[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).
+[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial, the background-removal model (BRIA RMBG 2.0) is CC BY-NC 4.0, and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).
