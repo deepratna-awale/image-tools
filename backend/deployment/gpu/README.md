@@ -14,9 +14,12 @@ processors on the GPU and returns the result image.
 ## Create the endpoint
 
 1. In the RunPod console, add credit (billing is per second; nothing is charged while idle).
-2. **Serverless → New Endpoint → GitHub repo**: pick this repository and branch `main`.
-   - Dockerfile path: `backend/deployment/gpu/Dockerfile`
-   - Build context: `backend`
+2. **Serverless → New Endpoint → Docker image**: `ghcr.io/deepratna-awale/image-tools-gpu:latest`.
+   The [GPU image workflow](../../../.github/workflows/gpu-image.yml) publishes it on every
+   push to `main` that touches the backend (the package must be public, or give RunPod
+   registry credentials). Pin a commit tag instead of `latest` to control rollouts.
+   RunPod can also build it from the repo (**GitHub repo** source, Dockerfile
+   `backend/deployment/gpu/Dockerfile`, build context `backend`).
 3. GPU: a 24 GB card (for example L4, A5000 or RTX 4090). 16 GB is enough for the
    cutout models; AI Shield's High strength needs more headroom.
 4. Workers: **min 0** (scale to zero), **max 3**. Idle timeout 5 s, execution timeout 900 s.
