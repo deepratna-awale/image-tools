@@ -26,6 +26,22 @@ jobs:
       - run: pip install -r requirements/test.txt
       - run: python -m pytest
 
+  gpu:
+    name: GPU endpoint dependencies
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      # Same Python as the endpoint's base image (Ubuntu 22.04)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r requirements/gpu.txt
+      # The handler and every processor it loads must import with only these packages
+      - run: python -c "import gpu_handler; print(sorted(gpu_handler.PROCESSORS))"
+
   frontend:
     name: Frontend lint and build
     runs-on: ubuntu-latest

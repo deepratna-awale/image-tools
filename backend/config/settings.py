@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     # sweep in the API; local storage only). The privacy policy quotes this number.
     file_retention_hours: float = 24
     max_queue_size: int = 1000
+    # Jobs the worker runs at once; keep 1 on CPU, raise it (e.g. 4) with a GPU endpoint
     worker_concurrency: int = 1
     # Cutout model for background removal/changing. BRIA RMBG 2.0 handles both photos
     # and anime well but is licensed CC BY-NC 4.0 (non-commercial); "isnet-general-use"
@@ -84,6 +85,17 @@ class Settings(BaseSettings):
     )
     # CPU threads for the cloak; 0 uses every core
     ai_shield_threads: int = 0
+
+    # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
+    # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),
+    # which bills per second and scales to zero. Without them, everything runs on CPU.
+    runpod_api_key: Optional[str] = None
+    runpod_endpoint_id: Optional[str] = None
+    runpod_api_url: str = "https://api.runpod.ai/v2"
+    # Longest wait for one GPU job, including a cold start
+    gpu_timeout_seconds: float = 900
+    # Run the job on this server's CPU if the GPU endpoint fails or times out
+    gpu_fallback_to_cpu: bool = True
     
     # Security
     secret_key: str = "your-secret-key-change-in-production"
@@ -134,6 +146,10 @@ class Settings(BaseSettings):
     @property
     def ai_shield_model_dir_list(self) -> List[str]:
         return parse_list(self.ai_shield_model_dirs)
+
+    @property
+    def gpu_enabled(self) -> bool:
+        return bool(self.runpod_api_key and self.runpod_endpoint_id)
 
     @property
     def allowed_origin_list(self) -> List[str]:

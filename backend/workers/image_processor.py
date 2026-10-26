@@ -8,6 +8,7 @@ from core.models.job import Job, ServiceType
 from core.messaging.queue_manager import QueueManager
 from core.messaging.rabbitmq_adapter import RabbitMQAdapter
 from core.messaging.sqs_adapter import SQSAdapter
+from core.gpu import GpuProcessor
 from services.background_removal.service import BackgroundRemovalService
 from services.background_changing.service import BackgroundChangingService
 from services.sky_replacement.service import SkyReplacementService
@@ -35,6 +36,12 @@ class ImageProcessorWorker:
             ServiceType.AI_SHIELD: AIShieldService(),
             # ServiceType.OUTPAINTING: OutpaintingService(),
         }
+
+        # Model work goes to the GPU endpoint when one is configured
+        if settings.gpu_enabled:
+            for service_type, service in self.services.items():
+                service.processor = GpuProcessor(service_type.value, service.processor)
+            logger.info(f"Sending model work to GPU endpoint {settings.runpod_endpoint_id}")
         
         self.running = False
     

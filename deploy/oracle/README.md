@@ -55,6 +55,13 @@ git pull
 ./deploy/oracle/setup.sh
 ```
 
+## Optional: GPU for the AI tools
+
+The VM's 2 CPU cores take over a minute per background removal and several minutes
+for AI Shield. To run that work on a pay-per-use GPU instead, follow
+[backend/deployment/gpu/README.md](../../backend/deployment/gpu/README.md) and add
+`RUNPOD_API_KEY` and `RUNPOD_ENDPOINT_ID` to `.env`.
+
 ## Checking on it
 
 ```bash
