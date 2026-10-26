@@ -23,7 +23,8 @@ class RabbitMQAdapter(QueueManager):
         try:
             self.connection = await aio_pika.connect_robust(settings.rabbitmq_url)
             self.channel = await self.connection.channel()
-            await self.channel.set_qos(prefetch_count=1)
+            # Jobs a worker runs at once (raise it when the GPU endpoint does the work)
+            await self.channel.set_qos(prefetch_count=max(1, settings.worker_concurrency))
             
             # Declare queues for each service type
             for service_type in ServiceType:

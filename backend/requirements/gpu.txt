@@ -1,0 +1,18 @@
+# GPU endpoint (deployment/gpu/Dockerfile): only what the processors need, with
+# CUDA builds of PyTorch (the default Linux wheels) and ONNX Runtime.
+pydantic
+pydantic-settings
+python-dotenv>=1.0.0
+
+rembg>=2.0.0
+onnxruntime-gpu>=1.19
+numpy>=1.24.0
+Pillow>=10.4.0
+opencv-python-headless>=4.8.0
+
+torch>=2.4
+diffusers>=0.30
+safetensors>=0.4
+
+runpod>=1.7
+httpx>=0.25.0

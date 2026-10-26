@@ -103,7 +103,7 @@ def _work_dims(width: int, height: int, work_size: int) -> Tuple[int, int]:
 def _gaussian_blur(x: torch.Tensor, sigma: float) -> torch.Tensor:
     """Differentiable blur, so the cloak also survives mild softening and resizing"""
     radius = max(1, int(round(sigma * 2)))
-    coords = torch.arange(-radius, radius + 1, dtype=x.dtype)
+    coords = torch.arange(-radius, radius + 1, dtype=x.dtype, device=x.device)
     kernel = torch.exp(-(coords**2) / (2 * sigma**2))
     kernel = kernel / kernel.sum()
     channels = x.shape[1]
@@ -120,6 +120,7 @@ class LatentEncoders:
         if not encoders:
             raise ValueError("At least one encoder is needed")
         self.encoders = list(encoders)
+        self.device = next(self.encoders[0].parameters(), torch.empty(0)).device
         for encoder in self.encoders:
             encoder.eval()
             for parameter in encoder.parameters():
@@ -129,13 +130,14 @@ class LatentEncoders:
     def from_dirs(cls, model_dirs: Sequence[str]) -> "LatentEncoders":
         from diffusers import AutoencoderKL
 
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         encoders = []
         for model_dir in model_dirs:
             vae = AutoencoderKL.from_pretrained(model_dir, torch_dtype=torch.float32)
             # Only the encoder is used; drop the decoder to save memory
             vae.decoder = torch.nn.Identity()
             vae.post_quant_conv = torch.nn.Identity()
-            encoders.append(VaeEncoder(vae))
+            encoders.append(VaeEncoder(vae).to(device))
         return cls(encoders)
 
     def __len__(self) -> int:
@@ -176,11 +178,13 @@ def cloak(
     height, width = rgb.shape[:2]
     work_w, work_h = _work_dims(width, height, strength.work_size)
 
+    device = encoders.device
+
     work_rgb = np.asarray(Image.fromarray(rgb).resize((work_w, work_h), Image.Resampling.LANCZOS))
-    x = _to_tensor(work_rgb)
+    x = _to_tensor(work_rgb).to(device)
     epsilon = strength.epsilon / 255.0
-    budget = epsilon * torch.from_numpy(texture_mask(work_rgb)).float()[None, None]
-    target = _to_tensor(target_pattern(work_w, work_h))
+    budget = epsilon * torch.from_numpy(texture_mask(work_rgb)).float()[None, None].to(device)
+    target = _to_tensor(target_pattern(work_w, work_h)).to(device)
 
     with torch.no_grad():
         target_latents = [encoders.encode(i, target) for i in range(len(encoders))]
@@ -188,7 +192,8 @@ def cloak(
 
     # Projected gradient descent with signed steps (PGD), starting from small random noise
     step_size = 2.5 * epsilon / strength.steps
-    delta = (torch.rand(x.shape, generator=generator) * 2 - 1) * budget * 0.5
+    # Random draws stay on the CPU generator so a seed gives the same cloak on any device
+    delta = (torch.rand(x.shape, generator=generator).to(device) * 2 - 1) * budget * 0.5
     for step in range(strength.steps):
         index = step % len(encoders)
         delta.requires_grad_(True)
@@ -208,12 +213,12 @@ def cloak(
         gap_after = [F.mse_loss(encoders.encode(i, x + delta), target_latents[i]).item() for i in range(len(encoders))]
 
         # Scale the perturbation up to the full image and keep it inside the full-size budget
-        full = _to_tensor(rgb)
-        full_budget = epsilon * torch.from_numpy(texture_mask(rgb)).float()[None, None]
+        full = _to_tensor(rgb).to(device)
+        full_budget = epsilon * torch.from_numpy(texture_mask(rgb)).float()[None, None].to(device)
         delta_full = F.interpolate(delta, size=(height, width), mode="bicubic", align_corners=False)
         delta_full = torch.maximum(torch.minimum(delta_full, full_budget), -full_budget)
         cloaked = (full + delta_full).clamp(0, 1)
-        result = (cloaked[0].permute(1, 2, 0).numpy() * 255.0).round().astype(np.uint8)
+        result = (cloaked[0].permute(1, 2, 0).cpu().numpy() * 255.0).round().astype(np.uint8)
 
     return CloakResult(result, gap_before, gap_after)
 

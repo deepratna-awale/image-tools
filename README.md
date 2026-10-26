@@ -74,6 +74,7 @@ Browser ──► Next.js frontend ──► FastAPI API ──► RabbitMQ ─�
 | Frontend | Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui |
 | API | FastAPI, Pydantic; proxies through the frontend, so the API port is never public |
 | Worker | Python job processor: rembg for cutouts, SegFormer-b0 (ONNX) for sky masks, Pillow and NumPy for compositing |
+| GPU endpoint (optional) | The same processors on a RunPod Serverless GPU, which the worker hands model work to when configured ([setup](./backend/deployment/gpu/README.md)) |
 | Queue & storage | RabbitMQ; local volume (or S3) shared by the API and worker |
 | Hosting | One Oracle Cloud Always Free Arm VM with Docker Compose and Caddy for HTTPS |
 

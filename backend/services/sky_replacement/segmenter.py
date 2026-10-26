@@ -40,9 +40,12 @@ class SkySegmenter:
     def session(self) -> ort.InferenceSession:
         with self._lock:
             if self._session is None:
-                self._session = ort.InferenceSession(
-                    ensure_model(), providers=["CPUExecutionProvider"]
-                )
+                # CUDA on the GPU endpoint, CPU everywhere else
+                providers = [
+                    p for p in ("CUDAExecutionProvider", "CPUExecutionProvider")
+                    if p in ort.get_available_providers()
+                ]
+                self._session = ort.InferenceSession(ensure_model(), providers=providers)
         return self._session
 
     def sky_probability(self, image: np.ndarray) -> np.ndarray:
