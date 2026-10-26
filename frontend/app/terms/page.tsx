@@ -77,7 +77,10 @@ export default function TermsPage() {
           Sky Swap uses the SegFormer model, released by NVIDIA under a <strong>non-commercial</strong> license.
         </li>
         <li>HEIC/HEIF images are opened with libheif, under the LGPL.</li>
-        <li>Background removal uses U²-Net through rembg, under the Apache 2.0 and MIT licenses.</li>
+        <li>
+          Background Remover and Background Changer use BRIA RMBG 2.0 through rembg, released by BRIA AI under a{" "}
+          <strong>non-commercial</strong> license (CC BY-NC 4.0).
+        </li>
       </ul>
       <p>If you run your own copy of the site, check those licenses fit what you plan to do with it.</p>
 

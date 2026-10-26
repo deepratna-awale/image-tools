@@ -62,4 +62,4 @@ sudo docker compose -f docker-compose.yml -f docker-compose.https.yml ps
 sudo docker compose -f docker-compose.yml -f docker-compose.https.yml logs -f worker
 ```
 
-The sky swap model is licensed for non-commercial use only (see `sky_model_url` in `backend/config/settings.py`), so swap it before using the site commercially.
+The sky swap and background removal models are licensed for non-commercial use only (see `sky_model_url` and `rembg_model` in `backend/config/settings.py`), so swap them before using the site commercially.
