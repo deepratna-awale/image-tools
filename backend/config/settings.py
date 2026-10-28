@@ -96,6 +96,13 @@ class Settings(BaseSettings):
     gpu_timeout_seconds: float = 900
     # Run the job on this server's CPU if the GPU endpoint fails or times out
     gpu_fallback_to_cpu: bool = True
+    # Monthly GPU spending cap in dollars (estimated per job, see core/gpu_budget.py);
+    # once reached, jobs run on the CPU until the next UTC month. 0 means no cap.
+    gpu_monthly_budget_usd: float = 10
+    # The endpoint GPU's price, and how long a worker stays warm after a job
+    # (the endpoint's idle timeout), both used for that estimate
+    gpu_price_per_hour: float = 0.69
+    gpu_idle_seconds: float = 5
     
     # Security
     secret_key: str = "your-secret-key-change-in-production"
