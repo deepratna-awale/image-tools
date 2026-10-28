@@ -19,10 +19,12 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY requirements/gpu.txt requirements/gpu.txt
-# PyTorch built for CUDA 12.6 first: the default PyPI wheels are built for a newer CUDA
-# than the drivers on many RunPod hosts support
-RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu126 \
-    && pip3 install -r requirements/gpu.txt
+# PyTorch built for the base image's CUDA (12.4) first: the default PyPI wheels need a
+# newer driver than many RunPod hosts have, and a build for any other CUDA version picks
+# up this image's libcudart and fails to load
+RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu124 \
+    && pip3 install -r requirements/gpu.txt \
+    && python3 -c "import torch; assert torch.version.cuda == '12.4', torch.version.cuda"
 
 # Same models as the CPU image (backend/deployment/docker/Dockerfile), baked in so
 # a cold start doesn't download them

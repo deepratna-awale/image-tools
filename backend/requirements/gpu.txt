@@ -1,5 +1,5 @@
 # GPU endpoint (deployment/gpu/Dockerfile): only what the processors need, with
-# CUDA builds of PyTorch (installed first by the Dockerfile, from the CUDA 12.6 index,
+# CUDA builds of PyTorch (installed first by the Dockerfile, from the CUDA 12.4 index,
 # since the default Linux wheels now need a newer driver than many GPU hosts have)
 # and ONNX Runtime.
 pydantic
