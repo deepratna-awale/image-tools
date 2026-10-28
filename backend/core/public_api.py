@@ -1,9 +1,9 @@
 """API key check and rate limits for requests from other apps.
 
-Caddy forwards /api/v1/background-removal/* and /api/v1/upscaling/* from the public
-site straight to the API and marks those requests with PUBLIC_API_HEADER. Requests without the mark
-come from the site's own frontend over the internal network and pass through
-unchanged; the API port itself is never published.
+Caddy forwards /api/v1/background-removal/*, /api/v1/upscaling/* and
+/api/v1/watermark-removal/* from the public site straight to the API and marks
+those requests with PUBLIC_API_HEADER. Requests without the mark come from the
+site's own frontend over the internal network and pass through unchanged; the API port itself is never published.
 
 Per-minute limits are checked here; daily image quotas are charged by the
 submission endpoints (charge_images), since only they know how many images a

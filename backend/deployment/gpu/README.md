@@ -2,7 +2,7 @@
 
 The Oracle VM keeps running the site, the API and the queue. With a GPU endpoint
 configured, the worker sends the model work for Background Remover, Background
-Changer, Sky Swap, AI Shield and the Upscaler to [RunPod Serverless](https://www.runpod.io/serverless-gpu),
+Changer, Sky Swap, AI Shield, the Upscaler and the Watermark Remover to [RunPod Serverless](https://www.runpod.io/serverless-gpu),
 which bills per second while a job runs and scales to zero when idle. If the endpoint
 fails or times out, the job runs on the VM's CPU as before.
 

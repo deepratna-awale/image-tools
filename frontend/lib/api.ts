@@ -128,7 +128,14 @@ export class BackgroundRemovalAPI {
 
 }
 
-export type ToolService = "background-changing" | "sky-replacement" | "ai-shield" | "upscaling";
+export type ToolService = "background-changing" | "sky-replacement" | "ai-shield" | "upscaling" | "watermark-removal";
+
+/** Text the watermark remover found: corner points in pixels of the upright image */
+export interface WatermarkDetection {
+  width: number;
+  height: number;
+  boxes: [number, number][][];
+}
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
   try {
@@ -172,5 +179,17 @@ export class ToolAPI {
     }
 
     return response.blob();
+  }
+
+  static async detectWatermark(file: File): Promise<WatermarkDetection> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch("/api/tools/watermark-removal/detect", { method: "POST", body: formData });
+
+    if (!response.ok) {
+      throw new Error(await errorMessage(response, "Failed to look for a watermark"));
+    }
+
+    return response.json();
   }
 }

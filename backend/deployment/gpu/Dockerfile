@@ -34,6 +34,8 @@ ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae
 # Upscaler: Real-ESRGAN photo and anime models (BSD-3-Clause) and the CLIP model that picks
 # between them (open_clip ViT-B-32 trained on LAION-400M, MIT), as url=filename
 ARG UPSCALE_MODELS="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
+# Watermark remover: LaMa inpainting (big-lama TorchScript, Apache-2.0)
+ARG WATERMARK_MODEL_URL=https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt
 RUN python3 -c "from rembg import new_session; new_session('${REMBG_MODEL}', providers=['CPUExecutionProvider'])" \
     && python3 -c "import urllib.request; urllib.request.urlretrieve('${SKY_MODEL_URL}', '${SKY_MODEL_PATH}')" \
     && for vae in ${AI_SHIELD_VAES}; do \
@@ -46,7 +48,9 @@ RUN python3 -c "from rembg import new_session; new_session('${REMBG_MODEL}', pro
     && for model in ${UPSCALE_MODELS}; do \
          python3 -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
            "${model%%=*}" "/opt/models/${model##*=}"; \
-       done
+       done \
+    && python3 -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+         "${WATERMARK_MODEL_URL}" /opt/models/big-lama.pt
 
 COPY config/ config/
 COPY core/ core/

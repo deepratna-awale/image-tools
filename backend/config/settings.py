@@ -101,6 +101,20 @@ class Settings(BaseSettings):
     # will take; about a minute per megapixel per core on the photo model
     upscale_max_output_pixels: int = 4096 * 4096
     upscale_cpu_max_input_pixels: int = 1024 * 1024
+    # Watermark remover: LaMa inpainting (big-lama TorchScript, Apache-2.0) fills the
+    # masked area. Each masked region is cropped with some context and shrunk to at most
+    # this many pixels on its longer side for the model (bigger on the GPU), then only
+    # the masked pixels are pasted back at full resolution.
+    watermark_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "big-lama.pt"
+    )
+    watermark_max_side_gpu: int = 2048
+    watermark_max_side_cpu: int = 1024
+    watermark_max_input_pixels: int = 6000 * 6000
+    # Text detection for finding watermarks automatically (PP-OCRv4 det, Apache-2.0)
+    text_detection_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "text-detection.onnx"
+    )
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
     # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),
@@ -125,8 +139,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # Public API for other apps (requests Caddy forwards from /api/v1/background-removal
-    # and /api/v1/upscaling).
+    # Public API for other apps (requests Caddy forwards from /api/v1/background-removal,
+    # /api/v1/upscaling and /api/v1/watermark-removal).
     # Comma-separated keys; callers send one as "X-API-Key" or "Authorization: Bearer".
     # With no keys set, the public API refuses every request.
     api_keys: str = ""

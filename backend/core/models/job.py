@@ -12,6 +12,7 @@ class ServiceType(str, Enum):
     SKY_REPLACEMENT = "sky_replacement"
     AI_SHIELD = "ai_shield"
     UPSCALING = "upscaling"
+    WATERMARK_REMOVAL = "watermark_removal"
     OUTPAINTING = "outpainting"
 
 

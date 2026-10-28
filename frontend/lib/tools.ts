@@ -1,4 +1,5 @@
 import {
+  BrushCleaning,
   Eraser,
   Expand,
   FileSearch,
@@ -79,6 +80,14 @@ export const TOOLS: Tool[] = [
     description: "Enlarge photos, anime and art up to 4× or to an exact size, with sharp detail.",
     image: "/tiles/upscaler.webp",
     icon: ImageUpscale,
+    category: "ai",
+  },
+  {
+    href: "/watermark-remover",
+    name: "Watermark Remover",
+    description: "Erase watermarks, text and date stamps. Finds text by itself; paint over anything else.",
+    image: "/tiles/watermark-remover.webp",
+    icon: BrushCleaning,
     category: "ai",
   },
   {
