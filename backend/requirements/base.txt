@@ -20,6 +20,11 @@ torch>=2.4
 diffusers>=0.30
 safetensors>=0.4
 
+# Upscaler (Real-ESRGAN models, and CLIP to tell anime from photos)
+torchvision
+spandrel>=0.4
+open_clip_torch>=2.24
+
 # File handling
 python-multipart>=0.0.6
 aiofiles>=23.0.0

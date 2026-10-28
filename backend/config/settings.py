@@ -85,6 +85,22 @@ class Settings(BaseSettings):
     )
     # CPU threads for the cloak; 0 uses every core
     ai_shield_threads: int = 0
+    # Upscaler: Real-ESRGAN x4 models (BSD-3-Clause) for photos and for anime/art, and
+    # a CLIP model (open_clip ViT-B-32, MIT) that tells the two apart. The Docker
+    # images bake all three into U2NET_HOME.
+    upscale_photo_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "RealESRGAN_x4plus.pth"
+    )
+    upscale_anime_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "RealESRGAN_x4plus_anime_6B.pth"
+    )
+    upscale_style_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "clip-vit-b-32-laion400m.pt"
+    )
+    # Largest result, and the largest input the CPU (no GPU endpoint, or a fallback)
+    # will take; about a minute per megapixel per core on the photo model
+    upscale_max_output_pixels: int = 4096 * 4096
+    upscale_cpu_max_input_pixels: int = 1024 * 1024
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
     # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),
@@ -102,7 +118,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # Public API for other apps (requests Caddy forwards from /api/v1/background-removal).
+    # Public API for other apps (requests Caddy forwards from /api/v1/background-removal
+    # and /api/v1/upscaling).
     # Comma-separated keys; callers send one as "X-API-Key" or "Authorization: Bearer".
     # With no keys set, the public API refuses every request.
     api_keys: str = ""

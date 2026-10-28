@@ -25,6 +25,7 @@
 | [Background Changer](https://imagetools.top/bg-changer) | Put your subject on a new background, a solid colour or your own picture. |
 | [Blur Background](https://imagetools.top/blur-background) | Blur what's behind your subject for a portrait-mode look. |
 | [Sky Swap](https://imagetools.top/sky-swap) | Replace a dull sky with a sunset, golden hour or a sky of your own. |
+| [Image Upscaler](https://imagetools.top/upscaler) | Enlarge up to 4× (any factor, like 1.5×) or to an exact size, cropping to fit. Detects anime/art vs. photos and uses the matching Real-ESRGAN model. |
 | Outpainting | Extend a photo beyond its edges. *Coming soon.* |
 
 ### Edit & Convert
@@ -48,7 +49,7 @@ Resize/convert, remove metadata, watermark and images to PDF run entirely in you
 
 ## Developer API
 
-Other apps can call background removal on the live site with an API key. Keys are self-serve from [imagetools.top/api-keys](https://imagetools.top/api-keys), each with per-minute and daily limits.
+Other apps can call background removal and the upscaler on the live site with an API key. Keys are self-serve from [imagetools.top/api-keys](https://imagetools.top/api-keys), each with per-minute and daily limits.
 
 ```bash
 KEY=your-api-key
@@ -191,7 +192,7 @@ Browser-only tools skip steps 1 and 2.
 - [x] Public API with self-serve keys
 - [ ] Outpainting
 - [ ] Shared job state (Redis) so the API and worker can scale out
-- [ ] More CPU tools: object eraser, face blur, upscaler, colorizer, OCR
+- [ ] More tools: object eraser, face blur, colorizer, OCR
 
 ## License
 
