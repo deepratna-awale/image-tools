@@ -25,6 +25,9 @@ ARG SKY_MODEL_URL=https://huggingface.co/Xenova/segformer-b0-finetuned-ade-512-5
 ENV SKY_MODEL_PATH=/opt/models/segformer-b0-ade.onnx
 # Stable Diffusion VAEs whose encoders AI Shield cloaks against (SD 1.x/2.x and SDXL, both MIT)
 ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae:sdxl-vae"
+# Upscaler: Real-ESRGAN photo and anime models (BSD-3-Clause) and the CLIP model that picks
+# between them (open_clip ViT-B-32 trained on LAION-400M, MIT), as url=filename
+ARG UPSCALE_MODELS="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
 RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
     && python -c "import urllib.request; urllib.request.urlretrieve('${SKY_MODEL_URL}', '${SKY_MODEL_PATH}')" \
     && for vae in ${AI_SHIELD_VAES}; do \
@@ -33,6 +36,10 @@ RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
            python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
              "https://huggingface.co/${repo}/resolve/main/${file}" "${dir}/${file}"; \
          done; \
+       done \
+    && for model in ${UPSCALE_MODELS}; do \
+         python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
+           "${model%%=*}" "/opt/models/${model##*=}"; \
        done \
     && mkdir -p "$NUMBA_CACHE_DIR" \
     && chmod -R a+rX /opt/models \

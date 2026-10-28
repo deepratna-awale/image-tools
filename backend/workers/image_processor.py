@@ -13,6 +13,7 @@ from services.background_removal.service import BackgroundRemovalService
 from services.background_changing.service import BackgroundChangingService
 from services.sky_replacement.service import SkyReplacementService
 from services.ai_shield.service import AIShieldService
+from services.upscaling.service import UpscalingService
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class ImageProcessorWorker:
             ServiceType.BACKGROUND_CHANGING: BackgroundChangingService(),
             ServiceType.SKY_REPLACEMENT: SkyReplacementService(),
             ServiceType.AI_SHIELD: AIShieldService(),
+            ServiceType.UPSCALING: UpscalingService(),
             # ServiceType.OUTPAINTING: OutpaintingService(),
         }
 

@@ -11,6 +11,7 @@ class ServiceType(str, Enum):
     BACKGROUND_CHANGING = "background_changing"
     SKY_REPLACEMENT = "sky_replacement"
     AI_SHIELD = "ai_shield"
+    UPSCALING = "upscaling"
     OUTPAINTING = "outpainting"
 
 

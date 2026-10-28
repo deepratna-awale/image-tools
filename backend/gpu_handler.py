@@ -13,6 +13,7 @@ from services.ai_shield.processor import AIShieldProcessor
 from services.background_changing.processor import BackgroundChangingProcessor
 from services.background_removal.processor import BackgroundRemovalProcessor
 from services.sky_replacement.processor import SkyReplacementProcessor
+from services.upscaling.processor import UpscalingProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ PROCESSORS = {
     ServiceType.BACKGROUND_CHANGING.value: BackgroundChangingProcessor(),
     ServiceType.SKY_REPLACEMENT.value: SkyReplacementProcessor(),
     ServiceType.AI_SHIELD.value: AIShieldProcessor(),
+    ServiceType.UPSCALING.value: UpscalingProcessor(),
 }
 
 

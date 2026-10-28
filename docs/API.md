@@ -1,6 +1,7 @@
 # Background Removal API
 
-Other apps can remove image backgrounds through the same service the site uses.
+Other apps can remove image backgrounds through the same service the site uses, and
+enlarge images with the upscaler ([Upscaling](#upscaling)).
 
 - **Base URL:** `https://imagetools.top/api/v1/background-removal`
 - **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`).
@@ -112,6 +113,39 @@ await writeFile("photo-no-bg.png", Buffer.from(await png.arrayBuffer()));
 
 Set `type` on the Blob: the API rejects uploads whose content type isn't `image/*`.
 
+## Upscaling
+
+The same keys, limits and job flow (submit, poll `status`, download `result`) work for
+the upscaler at **`https://imagetools.top/api/v1/upscaling`**. It enlarges an image with
+Real-ESRGAN and checks by itself whether the image is anime/art or a photo to pick the
+matching model. The result is a PNG (transparency is kept).
+
+Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`:
+
+| Field | What it does |
+| --- | --- |
+| `scale` | Any factor from 1 to 4, such as `1.5`, `2` or `3.2`. Default `2`. |
+| `width`, `height` | An exact size in pixels instead of a scale. With both, the image is enlarged until it covers the size and the overflow is cropped from the centre; with one, the other follows the image's shape. Wins over `scale`. |
+| `style` | `auto` (default), `photo` or `anime` to skip the check. |
+
+The result can be at most 4× the original on each side and 16.7 megapixels in all
+(4096×4096); larger requests get a 400 that says why, before anything is queued.
+
+```bash
+API=https://imagetools.top/api/v1/upscaling
+
+# 2.5x
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@art.png" -F scale=2.5 $API/process | jq -r .job_id)
+# or exactly 3840x2160, cropping what doesn't fit
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" -F width=3840 -F height=2160 $API/process | jq -r .job_id)
+
+until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 1; done
+curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o upscaled.png
+```
+
+The `removeBackground` function above works for it too: point `API` at the upscaling
+URL and append `scale` (or `width`/`height`) to the form.
+
 ## Calling from a browser
 
 Keep the key on your server where you can: call the API from your backend (or a
@@ -159,7 +193,7 @@ API_MAX_KEYS=20
 
 Then restart: `sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build`.
 
-How it fits together: Caddy sends `/api/v1/background-removal/*` straight to the
+How it fits together: Caddy sends `/api/v1/background-removal/*` and `/api/v1/upscaling/*` straight to the
 API container and marks those requests as public; the API checks the key and the
 rate limit only for marked requests. The site's own pages reach the API over the
 internal Docker network, so they keep working with or without keys. The API port

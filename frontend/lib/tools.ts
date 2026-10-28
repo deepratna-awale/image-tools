@@ -6,6 +6,7 @@ import {
   Focus,
   IdCard,
   ImageIcon,
+  ImageUpscale,
   type LucideIcon,
   Scaling,
   ShieldCheck,
@@ -70,6 +71,14 @@ export const TOOLS: Tool[] = [
     description: "Replace a dull sky with a sunset, golden hour or a sky of your own.",
     image: "/tiles/sky-swap.webp",
     icon: Sunset,
+    category: "ai",
+  },
+  {
+    href: "/upscaler",
+    name: "Image Upscaler",
+    description: "Enlarge photos, anime and art up to 4× or to an exact size, with sharp detail.",
+    image: "/tiles/upscaler.webp",
+    icon: ImageUpscale,
     category: "ai",
   },
   {

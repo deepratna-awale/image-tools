@@ -1,11 +1,11 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
-	# Public background-removal API for other apps (docs/API.md). The API checks the
-	# key and rate limit for requests carrying X-Public-Api, which only this route sets.
+	# Public background-removal and upscaling API for other apps (docs/API.md). The API
+	# checks the key and rate limit for requests carrying X-Public-Api, which only this route sets.
 	@public_api {
-		path /api/v1/background-removal/*
-		not path /api/v1/background-removal/stats
+		path /api/v1/background-removal/* /api/v1/upscaling/*
+		not path /api/v1/background-removal/stats /api/v1/upscaling/stats
 	}
 	handle @public_api {
 		reverse_proxy api:8000 {

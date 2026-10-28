@@ -24,12 +24,13 @@ export default function PrivacyPage() {
       <h2>Tools that use the server</h2>
       <p>
         <strong>Background Remover</strong>, <strong>Background Changer</strong>, <strong>Blur Background</strong>,{" "}
-        <strong>Passport &amp; ID Photo</strong>, <strong>Sky Swap</strong>, <strong>AI Shield</strong> and{" "}
-        <strong>Prompt Reader</strong> send your image to our server to be processed.
+        <strong>Passport &amp; ID Photo</strong>, <strong>Sky Swap</strong>, <strong>Image Upscaler</strong>,{" "}
+        <strong>AI Shield</strong> and <strong>Prompt Reader</strong> send your image to our server to be processed.
       </p>
       <ul>
         <li>
-          Images are processed on our own server by open-source models. They are not sent to any third-party AI service,
+          Images are processed by open-source models, on our own server or on GPU servers we rent from RunPod that
+          run the same code (RunPod keeps a job&apos;s result for at most 30 minutes). They are not sent to any third-party AI service,
           not used to train any model and not looked at by anyone.
         </li>
         <li>
