@@ -8,6 +8,7 @@ import gpu_handler
 from config.settings import settings
 from core import gpu
 from core.gpu import GpuProcessor, decode_arguments, encode_arguments
+from core.gpu_budget import GpuBudget
 
 
 class LocalProcessor:
@@ -17,6 +18,16 @@ class LocalProcessor:
     async def process(self, image_data: bytes, **arguments) -> bytes:
         self.calls.append(arguments)
         return b"cpu:" + image_data
+
+
+@pytest.fixture(autouse=True)
+def spend(monkeypatch, tmp_path):
+    budget = GpuBudget(str(tmp_path / "gpu_spend.json"))
+    monkeypatch.setattr(gpu, "budget", budget)
+    monkeypatch.setattr(settings, "gpu_monthly_budget_usd", 10)
+    monkeypatch.setattr(settings, "gpu_price_per_hour", 0.72)
+    monkeypatch.setattr(settings, "gpu_idle_seconds", 5)
+    return budget
 
 
 @pytest.fixture(autouse=True)
@@ -109,6 +120,39 @@ async def test_raises_without_fallback(monkeypatch):
 
     with pytest.raises(httpx.HTTPStatusError):
         await processor.process(b"photo")
+
+
+async def test_records_the_estimated_cost_of_each_job(spend):
+    def respond(request: httpx.Request):
+        return httpx.Response(200, json={**completed(b"done"), "delayTime": 3000, "executionTime": 2000})
+
+    processor = GpuProcessor("background_removal", LocalProcessor(), httpx.MockTransport(respond))
+    await processor.process(b"photo")
+
+    # 3 s start + 2 s run + 5 s idle, at $0.72/hr
+    assert spend.spent() == pytest.approx(10 * 0.72 / 3600)
+
+
+async def test_uses_the_cpu_once_the_monthly_budget_is_spent(spend):
+    spend.record(10 * 3600 / 0.72)  # $10 of GPU time
+    local = LocalProcessor()
+
+    def respond(request: httpx.Request):
+        raise AssertionError("the GPU endpoint should not be called")
+
+    processor = GpuProcessor("sky_replacement", local, httpx.MockTransport(respond))
+
+    assert await processor.process(b"photo") == b"cpu:photo"
+    assert local.calls == [{}]
+
+
+def test_budget_starts_over_each_month(spend):
+    spend.record(3600)
+    with open(spend.path, "w") as f:
+        json.dump({"month": "2000-01", "dollars": 99}, f)
+
+    assert spend.spent() == 0
+    assert not spend.exhausted()
 
 
 async def test_handler_runs_the_named_processor(monkeypatch):

@@ -45,6 +45,16 @@ The worker logs `Sending model work to GPU endpoint ...` at start and
 Other settings (`backend/config/settings.py`): `GPU_TIMEOUT_SECONDS` (default 900, includes
 a cold start) and `GPU_FALLBACK_TO_CPU` (default true).
 
+## Monthly budget
+
+RunPod has no monthly spending cap, so the worker keeps one: it estimates each job's
+cost (start-up + run time + the idle timeout, at the GPU's hourly price) and, once the
+month's total reaches `GPU_MONTHLY_BUDGET_USD` (default 10), runs jobs on the CPU until
+the next UTC month. The running total is in `gpu_spend.json` on the storage volume and
+is logged as `GPU spend this month: $X of $Y` after each job. Keep `GPU_PRICE_PER_HOUR`
+(default 0.69) and `GPU_IDLE_SECONDS` (default 5) in line with the endpoint's GPU and
+idle timeout. `GPU_MONTHLY_BUDGET_USD=0` removes the cap.
+
 ## What to expect
 
 - The first job after the endpoint has been idle waits for a cold start (tens of seconds
