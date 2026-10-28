@@ -150,32 +150,29 @@ URL and append `scale` (or `width`/`height`) to the form.
 ## Watermark removal
 
 **`https://imagetools.top/api/v1/watermark-removal`** takes the same keys, limits and job
-flow. It fills an area with LaMa inpainting so the watermark disappears into the
-picture. The result is a PNG at the original size (transparency is kept).
+flow. Florence-2 finds the watermark (text or logo) and an AI inpainting model (FLUX.1
+Fill) repaints the photo where it was. The result is a PNG at the original size
+(transparency is kept). It runs on a GPU; the first job after a quiet spell waits a
+minute or two for it to start.
 
-Send what to remove as `mask`, an image the same size as the photo that is white where
-to remove and black elsewhere (or opaque strokes on a transparent layer). A mask of
-another size is stretched to fit. Without a mask, the text in the image is found and
-removed; logos and other marks need a mask. If no text is found, the job fails with
-`No watermark text found`.
+Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`:
 
-| Endpoint | What it does |
+| Field | What it does |
 | --- | --- |
-| `POST /process` | `file`, optional `mask`. Returns a `job_id`. |
-| `POST /process-batch` | `files` (up to 10), optional `mask` shared by all of them (handy when every image has the watermark in the same place). |
-| `POST /detect` | `file`. Returns the text found, without removing it: `{"width", "height", "boxes": [[[x, y] × 4], ...]}` in pixels of the image turned upright by its EXIF rotation. Use it to draw a mask yourself. Not counted against the daily quota. |
+| `mask` | Optional. What to remove: an image white where to remove and black elsewhere (or opaque strokes on a transparent layer), stretched to fit if it's another size. Without it the watermark is found automatically; if none is found the job fails with `No watermark found`. A batch shares one mask. |
+| `mode` | `remove` (default) or `detect`: only find the watermark and return its mask (white on black PNG) as the result, to check or edit before removing. |
 
 Images can be up to 36 megapixels.
 
 ```bash
 API=https://imagetools.top/api/v1/watermark-removal
 
-# Find and remove the text by itself
+# Find and remove the watermark by itself
 JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" $API/process | jq -r .job_id)
 # or remove what's white in your own mask
 JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" -F "mask=@mask.png" $API/process | jq -r .job_id)
 
-until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 1; done
+until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 2; done
 curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o clean.png
 ```
 

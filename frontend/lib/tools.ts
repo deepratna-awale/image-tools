@@ -85,7 +85,7 @@ export const TOOLS: Tool[] = [
   {
     href: "/watermark-remover",
     name: "Watermark Remover",
-    description: "Erase watermarks, text and date stamps. Finds text by itself; paint over anything else.",
+    description: "AI finds watermarks, logos and text, then repaints the photo as if they were never there.",
     image: "/tiles/watermark-remover.webp",
     icon: BrushCleaning,
     category: "ai",

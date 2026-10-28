@@ -1,7 +1,7 @@
 import asyncio
 import io
 import logging
-from typing import Iterator, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -11,13 +11,14 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# Pixels of surrounding image each masked region is cropped with, so the model sees
-# what to continue
-CONTEXT = 128
+MODES = ("remove", "detect")
+# Pixels of surrounding image each masked region is cropped with (at least), so the
+# model sees what to continue
+CONTEXT = 96
 # Grow the mask a little: watermarks have soft, anti-aliased or shadowed edges
-GROW = 3
+GROW = 4
 # Blend the filled pixels into the original over this many pixels past the mask edge
-FEATHER = 2
+FEATHER = 3
 
 
 def load_mask(mask_data: bytes, size: Tuple[int, int]) -> np.ndarray:
@@ -51,18 +52,47 @@ def regions(mask: np.ndarray, context: int = CONTEXT) -> Iterator[Tuple[int, int
         yield int(left), int(top), int(min(left + w, width)), int(min(top + h, height))
 
 
+def mask_from_boxes(size: Tuple[int, int], boxes: List[List[List[float]]]) -> np.ndarray:
+    """A mask (uint8, 255 where to remove) of the given size with the boxes filled"""
+    width, height = size
+    mask = np.zeros((height, width), np.uint8)
+    for box in boxes:
+        cv2.fillPoly(mask, [np.round(np.array(box)).astype(np.int32)], 255)
+    return mask
+
+
+def png(pixels: np.ndarray) -> bytes:
+    buffer = io.BytesIO()
+    Image.fromarray(pixels).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def work_crop(left: int, top: int, right: int, bottom: int, width: int, height: int) -> Tuple[int, int, int, int]:
+    """Pad a thin crop (a line of text) to at most 3:1, inside the image: diffusion
+    models fill better with context on every side"""
+    w, h = right - left, bottom - top
+    if w > 3 * h:
+        pad = (w // 3 - h + 1) // 2
+        top, bottom = max(0, top - pad), min(height, bottom + pad)
+    elif h > 3 * w:
+        pad = (h // 3 - w + 1) // 2
+        left, right = max(0, left - pad), min(width, right + pad)
+    return left, top, right, bottom
+
+
 class WatermarkRemovalProcessor:
-    """Removes watermarks, text or objects under a mask by inpainting them with LaMa"""
+    """Finds watermarks with Florence-2 and repaints them with a diffusion inpainting
+    model. Needs the GPU endpoint: these models are far too heavy for the server's CPU."""
 
-    async def process(self, image_data: bytes, mask: Optional[bytes] = None) -> bytes:
-        return await asyncio.get_running_loop().run_in_executor(None, self._remove, image_data, mask)
+    async def process(self, image_data: bytes, mask: Optional[bytes] = None, mode: str = "remove") -> bytes:
+        return await asyncio.get_running_loop().run_in_executor(None, self._run, image_data, mask, mode)
 
-    def _remove(self, image_data: bytes, mask_data: Optional[bytes]) -> bytes:
-        # torch is only imported by the worker, never by the API
-        from .models import get_model, on_gpu
+    def _run(self, image_data: bytes, mask_data: Optional[bytes], mode: str) -> bytes:
+        # torch is only imported by the worker and the GPU endpoint, never by the API
+        from . import models
 
-        if mask_data is None:
-            raise ValueError("No mask: mark the watermark to remove")
+        if not models.on_gpu():
+            raise ValueError("The watermark remover is busy right now; please try again in a few minutes")
         source = Image.open(io.BytesIO(image_data))
         icc_profile = source.info.get("icc_profile")
         image = ImageOps.exif_transpose(source)
@@ -71,9 +101,17 @@ class WatermarkRemovalProcessor:
             megapixels = settings.watermark_max_input_pixels / 1_000_000
             raise ValueError(f"This image is too large; the most is {megapixels:.0f} megapixels")
 
-        holes = load_mask(mask_data, (width, height))
-        if not holes.any():
-            raise ValueError("The mask is empty: mark the watermark to remove")
+        if mode == "detect" or mask_data is None:
+            holes = mask_from_boxes((width, height), models.get_finder().find(image)) > 0
+            if mode == "detect":
+                # The page shows this so people can fix it; an empty one is fine
+                return png(holes.astype(np.uint8) * 255)
+            if not holes.any():
+                raise ValueError("No watermark found; mark it with the brush and try again")
+        else:
+            holes = load_mask(mask_data, (width, height))
+            if not holes.any():
+                raise ValueError("The mask is empty: mark the watermark to remove")
         grow = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * GROW + 1, 2 * GROW + 1))
         holes = cv2.dilate(holes.astype(np.uint8), grow)
 
@@ -82,26 +120,23 @@ class WatermarkRemovalProcessor:
             alpha = image.convert("RGBA").getchannel("A")
         rgb = np.array(image.convert("RGB"))
 
-        max_side = settings.watermark_max_side_gpu if on_gpu() else settings.watermark_max_side_cpu
-        model = get_model()
-        for left, top, right, bottom in regions(holes.astype(bool)):
+        filler = models.get_filler()
+        for region in regions(holes.astype(bool)):
+            left, top, right, bottom = work_crop(*region, width, height)
+            crop_w, crop_h = right - left, bottom - top
             crop_rgb = rgb[top:bottom, left:right]
             crop_mask = holes[top:bottom, left:right]
-            crop_w, crop_h = right - left, bottom - top
-            factor = min(1.0, max_side / max(crop_w, crop_h))
-            if factor < 1:
-                size = (max(1, round(crop_w * factor)), max(1, round(crop_h * factor)))
-                small_rgb = cv2.resize(crop_rgb, size, interpolation=cv2.INTER_AREA)
-                # Any covered pixel stays covered after shrinking
-                small_mask = cv2.resize(crop_mask.astype(np.float32), size, interpolation=cv2.INTER_AREA) > 0
-                filled = cv2.resize(model.inpaint(small_rgb, small_mask), (crop_w, crop_h), interpolation=cv2.INTER_CUBIC)
-            else:
-                filled = model.inpaint(crop_rgb, crop_mask)
-            logger.info(f"Inpainted a {crop_w}x{crop_h} region at {factor:.2f}x")
+            # The model works best near its training size, so small crops are enlarged too
+            factor = settings.watermark_work_size / max(crop_w, crop_h)
+            size = tuple(max(filler.multiple, round(side * factor / filler.multiple) * filler.multiple) for side in (crop_w, crop_h))
+            work_rgb = Image.fromarray(crop_rgb).resize(size, Image.LANCZOS)
+            work_mask = Image.fromarray(crop_mask * 255).resize(size, Image.BILINEAR).point(lambda v: 255 if v else 0)
+            filled = filler.fill(work_rgb, work_mask).convert("RGB").resize((crop_w, crop_h), Image.LANCZOS)
+            logger.info(f"Repainted a {crop_w}x{crop_h} region at {size[0]}x{size[1]}")
 
             weight = cv2.GaussianBlur(crop_mask.astype(np.float32), (0, 0), FEATHER)
             weight = np.maximum(weight, crop_mask)[..., None]
-            blended = crop_rgb * (1 - weight) + filled * weight
+            blended = crop_rgb * (1 - weight) + np.asarray(filled) * weight
             rgb[top:bottom, left:right] = np.clip(blended.round(), 0, 255).astype(np.uint8)
 
         output = Image.fromarray(rgb)

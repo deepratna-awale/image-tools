@@ -1,6 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Request
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from typing import Dict, List, Optional
-import asyncio
 import io
 import logging
 
@@ -10,7 +9,7 @@ from config.settings import settings
 from core.job_router import add_job_routes, read_image, read_images
 from core.public_api import charge_images
 from core.models.responses import BatchJobSubmissionResponse, JobSubmissionResponse
-from .detector import detect_text, open_image
+from .processor import MODES
 from .service import WatermarkRemovalService
 
 logger = logging.getLogger(__name__)
@@ -35,7 +34,7 @@ def _check_size(content: bytes, filename: str) -> None:
 
 
 async def _mask_assets(mask: Optional[UploadFile]) -> Dict[str, tuple[bytes, str]]:
-    """With no mask the worker finds the watermark text by itself"""
+    """With no mask the watermark is found automatically"""
     if mask is None or not mask.filename:
         return {}
     content, filename = await read_image(mask)
@@ -46,22 +45,11 @@ async def _mask_assets(mask: Optional[UploadFile]) -> Dict[str, tuple[bytes, str
     return {"mask": (content, filename)}
 
 
-@router.post("/detect")
-async def detect_watermark(file: UploadFile = File(...)):
-    """Find text that looks like a watermark; returns padded boxes as corner points in
-    pixels of the upright image (after its EXIF rotation)"""
-    content, filename = await read_image(file)
-    _check_size(content, filename)
-
-    def detect():
-        image = open_image(content)
-        return {"width": image.width, "height": image.height, "boxes": detect_text(image)}
-
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, detect)
-    except Exception as e:
-        logger.error(f"Error detecting watermark: {e}")
-        raise HTTPException(status_code=500, detail="Could not look for a watermark in this image")
+def _parameters(mode: Optional[str]) -> Dict[str, str]:
+    mode = mode or "remove"
+    if mode not in MODES:
+        raise HTTPException(status_code=400, detail=f"mode must be one of: {', '.join(MODES)}")
+    return {"mode": mode}
 
 
 @router.post("/process", response_model=JobSubmissionResponse)
@@ -69,15 +57,18 @@ async def queue_watermark_removal(
     request: Request,
     file: UploadFile = File(...),
     mask: Optional[UploadFile] = File(None),
+    mode: Optional[str] = Form(None),
 ):
-    """Queue a removal job: fills what's white in `mask`, or the text found automatically"""
+    """Queue a job: `remove` (default) repaints what's white in `mask`, or the watermark
+    found automatically; `detect` only returns the mask of what it found"""
     try:
+        parameters = _parameters(mode)
         file_content, filename = await read_image(file)
         _check_size(file_content, filename)
         assets = await _mask_assets(mask)
         charge_images(request, 1)
 
-        job = await watermark_removal_service.submit_job(file_content, filename, {}, assets)
+        job = await watermark_removal_service.submit_job(file_content, filename, parameters, assets)
 
         return JobSubmissionResponse(
             job_id=job.job_id,
@@ -98,17 +89,19 @@ async def queue_batch_watermark_removal(
     request: Request,
     files: List[UploadFile] = File(...),
     mask: Optional[UploadFile] = File(None),
+    mode: Optional[str] = Form(None),
 ):
-    """Queue removal jobs for several images: one shared mask (stretched to each image),
-    or each image's own text found automatically"""
+    """Queue jobs for several images: one shared mask (stretched to each image), or each
+    image's own watermark found automatically"""
     try:
+        parameters = _parameters(mode)
         files_data = await read_images(files)
         for content, filename in files_data:
             _check_size(content, filename)
         assets = await _mask_assets(mask)
         charge_images(request, len(files_data))
 
-        batch_job = await watermark_removal_service.submit_batch_job(files_data, {}, assets)
+        batch_job = await watermark_removal_service.submit_batch_job(files_data, parameters, assets)
 
         return BatchJobSubmissionResponse(
             batch_id=batch_job.batch_id,

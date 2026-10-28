@@ -28,11 +28,6 @@ ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae
 # Upscaler: Real-ESRGAN photo and anime models (BSD-3-Clause) and the CLIP model that picks
 # between them (open_clip ViT-B-32 trained on LAION-400M, MIT), as url=filename
 ARG UPSCALE_MODELS="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
-# Watermark remover: LaMa inpainting (big-lama TorchScript, Apache-2.0)
-ARG WATERMARK_MODEL_URL=https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt
-# and the PP-OCRv4 text detection model (Apache-2.0) that finds watermark text,
-# taken from the RapidOCR wheel (only the model; the API and worker run it themselves)
-ARG TEXT_DETECTION_WHEEL=rapidocr_onnxruntime==1.4.4
 RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
     && python -c "import urllib.request; urllib.request.urlretrieve('${SKY_MODEL_URL}', '${SKY_MODEL_PATH}')" \
     && for vae in ${AI_SHIELD_VAES}; do \
@@ -46,11 +41,6 @@ RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
          python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
            "${model%%=*}" "/opt/models/${model##*=}"; \
        done \
-    && python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
-         "${WATERMARK_MODEL_URL}" /opt/models/big-lama.pt \
-    && pip download --no-deps --only-binary=:all: -d /tmp/text-detection "${TEXT_DETECTION_WHEEL}" \
-    && python -c "import glob, zipfile; open('/opt/models/text-detection.onnx', 'wb').write(zipfile.ZipFile(glob.glob('/tmp/text-detection/*.whl')[0]).read('rapidocr_onnxruntime/models/ch_PP-OCRv4_det_infer.onnx'))" \
-    && rm -rf /tmp/text-detection \
     && mkdir -p "$NUMBA_CACHE_DIR" \
     && chmod -R a+rX /opt/models \
     && chmod -R a+rwX "$NUMBA_CACHE_DIR"

@@ -13,11 +13,18 @@ Pillow>=10.4.0
 opencv-python-headless>=4.8.0
 
 torch>=2.4
-diffusers>=0.30
+diffusers>=0.32
 safetensors>=0.4
 torchvision
 spandrel>=0.4
 open_clip_torch>=2.24
+# Watermark remover: Florence-2 (native in transformers 4.56+), FLUX.1 Fill quantized
+# to 4 bits with bitsandbytes, and T5's tokenizer
+transformers>=4.56
+accelerate
+bitsandbytes>=0.45
+sentencepiece
+protobuf
 
 runpod>=1.7
 httpx>=0.25.0

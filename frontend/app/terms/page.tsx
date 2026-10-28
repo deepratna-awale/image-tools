@@ -81,6 +81,10 @@ export default function TermsPage() {
           Background Remover and Background Changer use BRIA RMBG 2.0 through rembg, released by BRIA AI under a{" "}
           <strong>non-commercial</strong> license (CC BY-NC 4.0).
         </li>
+        <li>
+          Watermark Remover uses FLUX.1 Fill [dev], released by Black Forest Labs under a{" "}
+          <strong>non-commercial</strong> license.
+        </li>
       </ul>
       <p>If you run your own copy of the site, check those licenses fit what you plan to do with it.</p>
 

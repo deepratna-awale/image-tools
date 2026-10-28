@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Brush, Eraser, ScanText, Trash2, Undo2 } from "lucide-react";
+import { Brush, Eraser, ScanSearch, Trash2, Undo2 } from "lucide-react";
 import DropZone from "../components/drop-zone";
 import ToolHeader from "../components/tool-header";
 import ToolResult from "../components/tool-result";
 import { useToolJob } from "../components/use-tool-job";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ToolAPI } from "@/lib/api";
 import { baseName, canvasToBlob, createCanvas, loadImage } from "@/lib/image-utils";
 
 // Shown at half opacity over the photo; only where the mask is painted matters
@@ -23,7 +22,6 @@ export default function WatermarkRemoverPage() {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const [tool, setTool] = useState<Tool>("brush");
   const [brush, setBrush] = useState(28);
-  const [detecting, setDetecting] = useState(false);
   const [note, setNote] = useState("");
   const [painted, setPainted] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
@@ -36,6 +34,9 @@ export default function WatermarkRemoverPage() {
   const undoStack = useRef<ImageData[]>([]);
   const stroke = useRef<{ x: number; y: number } | null>(null);
   const { run, isProcessing, status, error, resultUrl, jobId } = useToolJob("watermark-removal");
+  // A separate job that only finds the watermark and returns its mask
+  const finder = useToolJob("watermark-removal");
+  const detecting = finder.isProcessing;
 
   useEffect(() => {
     setSize(null);
@@ -100,36 +101,59 @@ export default function WatermarkRemoverPage() {
     setPainted(false);
   };
 
-  const detect = async () => {
-    const ctx = context();
-    if (!image || !size || !ctx) return;
-    setDetecting(true);
-    setNote("Looking for watermark text...");
-    try {
-      const found = await ToolAPI.detectWatermark(image);
-      saveUndo();
-      const sx = size.width / found.width;
-      const sy = size.height / found.height;
-      ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = MASK_COLOR;
-      for (const box of found.boxes) {
-        ctx.beginPath();
-        box.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x * sx, y * sy) : ctx.lineTo(x * sx, y * sy)));
-        ctx.closePath();
-        ctx.fill();
-      }
-      if (found.boxes.length > 0) setPainted(true);
-      setNote(
-        found.boxes.length > 0
-          ? `Marked ${found.boxes.length} text area${found.boxes.length === 1 ? "" : "s"}. Erase any you want to keep, and paint over logos or anything missed.`
-          : "No watermark text found. Paint over the watermark with the brush.",
-      );
-    } catch (e) {
-      setNote(`${e instanceof Error ? e.message : String(e)}. Paint over the watermark with the brush.`);
-    } finally {
-      setDetecting(false);
-    }
+  const detect = () => {
+    if (!image) return;
+    setNote("Finding the watermark... The first run after a quiet spell can take a minute while the GPU starts.");
+    const formData = new FormData();
+    formData.append("file", image);
+    formData.append("mode", "detect");
+    finder.run(formData);
   };
+
+  // Paint what the finder marked (white in its mask) onto the editable mask
+  useEffect(() => {
+    if (!finder.resultUrl) return;
+    let cancelled = false;
+    (async () => {
+      const ctx = context();
+      const canvas = maskRef.current;
+      if (!ctx || !canvas) return;
+      const found = await createImageBitmap(await (await fetch(finder.resultUrl)).blob());
+      if (cancelled) return;
+      const { canvas: layer, ctx: layerCtx } = createCanvas(canvas.width, canvas.height);
+      layerCtx.drawImage(found, 0, 0, canvas.width, canvas.height);
+      found.close();
+      const pixels = layerCtx.getImageData(0, 0, layer.width, layer.height);
+      let marked = 0;
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const on = pixels.data[i] > 127;
+        if (on) marked++;
+        // Red where found, clear elsewhere
+        pixels.data[i] = 0xef;
+        pixels.data[i + 1] = 0x44;
+        pixels.data[i + 2] = 0x44;
+        pixels.data[i + 3] = on ? 255 : 0;
+      }
+      layerCtx.putImageData(pixels, 0, 0);
+      saveUndo();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(layer, 0, 0);
+      if (marked > 0) setPainted(true);
+      setNote(
+        marked > 0
+          ? "Marked what looks like a watermark. Erase anything you want to keep, and paint over anything missed."
+          : "No watermark found. Paint over it with the brush.",
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finder.resultUrl]);
+
+  useEffect(() => {
+    if (finder.error) setNote(`${finder.error}. You can paint over the watermark with the brush.`);
+  }, [finder.error]);
 
   /** Pointer position in image pixels, and how many image pixels one screen pixel is */
   const toImage = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -255,8 +279,8 @@ export default function WatermarkRemoverPage() {
                   <Trash2 className="size-4" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={detect} disabled={detecting || !size} className="gap-1.5">
-                  <ScanText className="size-4" />
-                  Find text
+                  <ScanSearch className="size-4" />
+                  Find watermark
                 </Button>
               </div>
             </div>

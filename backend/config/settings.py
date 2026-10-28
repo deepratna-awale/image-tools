@@ -101,20 +101,25 @@ class Settings(BaseSettings):
     # will take; about a minute per megapixel per core on the photo model
     upscale_max_output_pixels: int = 4096 * 4096
     upscale_cpu_max_input_pixels: int = 1024 * 1024
-    # Watermark remover: LaMa inpainting (big-lama TorchScript, Apache-2.0) fills the
-    # masked area. Each masked region is cropped with some context and shrunk to at most
-    # this many pixels on its longer side for the model (bigger on the GPU), then only
-    # the masked pixels are pasted back at full resolution.
-    watermark_model_path: str = os.path.join(
-        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "big-lama.pt"
+    # Watermark remover (GPU only): Florence-2 (MIT) finds the watermark, then a diffusion
+    # inpainting model repaints it: "flux" (FLUX.1 Fill [dev], best results, non-commercial
+    # license) or "sdxl" (SDXL Inpainting 0.1, OpenRAIL++, commercial use allowed). The
+    # GPU image bakes the chosen models into U2NET_HOME (deployment/gpu/Dockerfile).
+    watermark_detector_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "florence-2-large"
     )
-    watermark_max_side_gpu: int = 2048
-    watermark_max_side_cpu: int = 1024
+    watermark_fill_model: str = "flux"
+    watermark_flux_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "flux-fill"
+    )
+    watermark_sdxl_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "sdxl-inpaint"
+    )
+    # Each masked region is cropped with surrounding context and scaled so its longer
+    # side is this many pixels for the model, then only the masked pixels are pasted back
+    watermark_work_size: int = 1024
+    watermark_steps: int = 28
     watermark_max_input_pixels: int = 6000 * 6000
-    # Text detection for finding watermarks automatically (PP-OCRv4 det, Apache-2.0)
-    text_detection_model_path: str = os.path.join(
-        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "text-detection.onnx"
-    )
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
     # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),
