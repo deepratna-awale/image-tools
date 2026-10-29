@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
 from config.settings import settings
+from core.animation import image_mime_type
 from core.job_service import ImageJobService
 from core.models.responses import APIResponse, BatchJobStatusResponse, JobStatusResponse
 
@@ -74,10 +75,13 @@ def add_job_routes(router: APIRouter, service: ImageJobService) -> None:
             if not result_data:
                 raise HTTPException(status_code=404, detail="Result not found")
 
+            # Animations come back as WebP, everything else as PNG
+            media_type = image_mime_type(result_data)
+            extension = media_type.split("/")[1].replace("jpeg", "jpg")
             return StreamingResponse(
                 io.BytesIO(result_data),
-                media_type="image/png",
-                headers={"Content-Disposition": f"attachment; filename=processed_{job_id}.png"}
+                media_type=media_type,
+                headers={"Content-Disposition": f"attachment; filename=processed_{job_id}.{extension}"}
             )
 
         except HTTPException:

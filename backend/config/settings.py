@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     # and anime well but is licensed CC BY-NC 4.0 (non-commercial); "isnet-general-use"
     # or "birefnet-general" are permissively licensed alternatives.
     rembg_model: str = "bria-rmbg"
+    # Animated GIF/WebP/APNG cutouts: each frame is cut out on the GPU (one call per
+    # frame), and longer animations keep this many frames. Without a GPU (or once its
+    # monthly budget is used up) only the first frame is cut out.
+    max_animation_frames: int = 100
     # Sky swap segmentation model: any ADE20K semantic segmentation ONNX export with a
     # "pixel_values" input and [1, 150, h, w] logits works. The default (SegFormer-b0)
     # is released under NVIDIA's non-commercial license; swap the URL for commercial use.

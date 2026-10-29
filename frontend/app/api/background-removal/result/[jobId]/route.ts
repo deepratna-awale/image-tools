@@ -19,12 +19,12 @@ export async function GET(
       );
     }
 
-    // Return the image as a stream
+    // Return the image as a stream (animations come back as WebP, the rest as PNG)
     const imageBlob = await backendRes.blob();
     return new NextResponse(imageBlob, {
       headers: {
-        'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename=processed_${jobId}.png`,
+        'Content-Type': backendRes.headers.get('Content-Type') || 'image/png',
+        'Content-Disposition': backendRes.headers.get('Content-Disposition') || `attachment; filename=processed_${jobId}.png`,
       },
     });
     
