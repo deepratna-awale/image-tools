@@ -157,6 +157,27 @@ def test_mask_from_boxes():
     assert mask[15, 20] == 255 and mask[40, 60] == 0
 
 
+def test_finder_keeps_every_phrase_and_big_text():
+    finder = object.__new__(models.WatermarkFinder)
+    answers = {
+        "watermark": {"bboxes": [[600, 540, 800, 580]]},  # corner credit
+        "logo watermark": {"bboxes": [[0, 0, 868, 600]]},  # the whole photo: dropped
+        "text watermark": {"bboxes": []},
+        "<OCR_WITH_REGION>": {
+            "quad_boxes": [
+                [80, 190, 520, 190, 520, 240, 80, 240],  # big faint label
+                [50, 350, 70, 350, 70, 356, 50, 356],  # small sign in the photo: left alone
+            ]
+        },
+    }
+    finder._run = lambda image, task, text="": answers[text or task]
+    found = finder.find(Image.new("RGB", (868, 600)))
+    assert found == [
+        [[600, 540], [800, 540], [800, 580], [600, 580]],
+        [[80.0, 190.0], [520.0, 190.0], [520.0, 240.0], [80.0, 240.0]],
+    ]
+
+
 def test_masked_area_is_filled_and_the_rest_kept(client, queue, model):
     job_id = submit(client, mask=mask_png()).json()["job_id"]
     run_worker(queue)

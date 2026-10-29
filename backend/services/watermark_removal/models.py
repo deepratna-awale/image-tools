@@ -15,11 +15,15 @@ logger = logging.getLogger(__name__)
 
 Box = Tuple[float, float, float, float]
 
-# What the finder is asked to locate, in order: the first phrase that finds anything wins
+# What the finder is asked to locate; every phrase is tried and all boxes are kept,
+# as each one catches watermarks the others miss (a corner credit vs a big faint label)
 DETECT_PHRASES = ("watermark", "logo watermark", "text watermark")
 # A box covering more of the image than this is the finder calling the whole photo a
-# watermark (it does that with tiled ones), so text boxes are used instead
+# watermark (it does that with tiled ones), so it is dropped and text boxes do the work
 MAX_BOX_SHARE = 0.5
+# Text lines shorter than this share of the image height are left alone: watermarks are
+# made to be seen, small text is usually part of the photo (signs, labels)
+MIN_TEXT_SHARE = 0.02
 
 # What the inpainting model is steered towards and away from
 FILL_PROMPT = "clean photo, seamless natural background, high quality"
@@ -53,22 +57,19 @@ class WatermarkFinder:
         return self.processor.post_process_generation(generated, task=task, image_size=image.size)[task]
 
     def find(self, image: Image.Image) -> List[List[List[float]]]:
-        """Corner points (clockwise from top left, in image pixels) of each watermark"""
+        """Corner points (clockwise from top left, in image pixels) of each watermark:
+        what Florence-2 calls a watermark plus any sizeable text overlaid on the photo"""
         image = image.convert("RGB")
         area = image.width * image.height
+        found = []
         for phrase in DETECT_PHRASES:
-            found = self._run(image, "<OPEN_VOCABULARY_DETECTION>", phrase)
-            boxes = [box for box in found.get("bboxes", []) if _box_area(box) <= MAX_BOX_SHARE * area]
-            if boxes:
-                logger.info(f"Found {len(boxes)} watermark(s) as '{phrase}'")
-                return [_corners(box) for box in boxes]
-            if found.get("bboxes"):
-                # Covers the whole photo: most likely a tiled watermark made of text
-                text = self._run(image, "<OCR_WITH_REGION>")
-                quads = [np.array(q, dtype=float).reshape(4, 2).tolist() for q in text.get("quad_boxes", [])]
-                logger.info(f"Watermark covers the photo; using {len(quads)} text regions")
-                return quads
-        return []
+            boxes = self._run(image, "<OPEN_VOCABULARY_DETECTION>", phrase).get("bboxes", [])
+            found += [_corners(box) for box in boxes if _box_area(box) <= MAX_BOX_SHARE * area]
+        text = self._run(image, "<OCR_WITH_REGION>").get("quad_boxes", [])
+        quads = [np.array(quad, dtype=float).reshape(4, 2) for quad in text]
+        found += [quad.tolist() for quad in quads if np.ptp(quad[:, 1]) >= MIN_TEXT_SHARE * image.height]
+        logger.info(f"Found {len(found)} watermark region(s)")
+        return found
 
 
 def _box_area(box) -> float:
