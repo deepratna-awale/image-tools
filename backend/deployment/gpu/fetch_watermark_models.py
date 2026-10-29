@@ -22,10 +22,10 @@ CONFIGS = ["*.json", "*.txt", "*.model", "tokenizer*/*"]
 fetch("florence-community/Florence-2-large", "florence-2-large", CONFIGS + ["*.safetensors"])
 if fill_model == "flux":
     if not token:
-        sys.exit("FLUX.1 Fill is gated: build with an hf_token secret (see deployment/gpu/README.md)")
+        sys.exit("FLUX.1 Kontext is gated: build with an hf_token secret (see deployment/gpu/README.md)")
     fetch(
-        "black-forest-labs/FLUX.1-Fill-dev",
-        "flux-fill",
+        "black-forest-labs/FLUX.1-Kontext-dev",
+        "flux-kontext",
         CONFIGS + ["transformer/*.safetensors", "text_encoder/*.safetensors", "text_encoder_2/*.safetensors", "vae/*.safetensors"],
     )
 elif fill_model == "sdxl":

@@ -1,5 +1,5 @@
-"""The watermark finder (Florence-2) and the inpainting models (FLUX.1 Fill or SDXL
-Inpainting). Imports torch, so only the GPU endpoint and the worker load this module."""
+"""The watermark finder (Florence-2) and the models that repaint it (FLUX.1 Kontext or
+SDXL Inpainting). Imports torch, so only the GPU endpoint and the worker load this module."""
 
 import logging
 import threading
@@ -25,6 +25,11 @@ MAX_BOX_SHARE = 0.5
 # made to be seen, small text is usually part of the photo (signs, labels)
 MIN_TEXT_SHARE = 0.02
 
+# What Kontext is asked to do
+EDIT_PROMPT = (
+    "Remove all watermark text, logos and overlaid captions from the photo. "
+    "Keep everything else exactly the same."
+)
 # What the inpainting model is steered towards and away from
 FILL_PROMPT = "clean photo, seamless natural background, high quality"
 NEGATIVE_PROMPT = "text, watermark, logo, letters, signature, caption, stamp, blurry, artifacts"
@@ -92,13 +97,15 @@ class Filler:
         raise NotImplementedError
 
 
-class FluxFiller(Filler):
-    """FLUX.1 Fill [dev], its 12B transformer quantized to 4 bits to fit a 24 GB GPU"""
+class KontextFiller(Filler):
+    """FLUX.1 Kontext [dev], an instruction editor, its 12B transformer quantized to 4 bits
+    to fit a 24 GB GPU. Unlike an inpainting model it sees the watermark it is removing,
+    so it rebuilds what was under it instead of inventing something new for the hole."""
 
     multiple = 16
 
     def __init__(self, path: str):
-        from diffusers import BitsAndBytesConfig, FluxFillPipeline, FluxTransformer2DModel
+        from diffusers import BitsAndBytesConfig, FluxKontextPipeline, FluxTransformer2DModel
 
         transformer = FluxTransformer2DModel.from_pretrained(
             path,
@@ -108,22 +115,20 @@ class FluxFiller(Filler):
             ),
             torch_dtype=torch.bfloat16,
         )
-        self.pipe = FluxFillPipeline.from_pretrained(path, transformer=transformer, torch_dtype=torch.bfloat16)
+        self.pipe = FluxKontextPipeline.from_pretrained(path, transformer=transformer, torch_dtype=torch.bfloat16)
         self.pipe.to("cuda")
 
     @torch.inference_mode()
     def fill(self, image: Image.Image, mask: Image.Image) -> Image.Image:
-        return self.pipe(
-            prompt=FILL_PROMPT,
+        # The whole crop is edited; the caller pastes back only the masked pixels
+        edited = self.pipe(
             image=image,
-            mask_image=mask,
-            width=image.width,
-            height=image.height,
+            prompt=EDIT_PROMPT,
             num_inference_steps=settings.watermark_steps,
-            strength=settings.watermark_strength,
-            guidance_scale=30,
+            guidance_scale=2.5,
             generator=torch.Generator("cuda").manual_seed(0),
         ).images[0]
+        return edited.resize(image.size, Image.LANCZOS)
 
 
 class SdxlFiller(Filler):
@@ -174,5 +179,5 @@ def get_filler() -> Filler:
             if name == "sdxl":
                 _models["filler"] = SdxlFiller(settings.watermark_sdxl_path)
             else:
-                _models["filler"] = FluxFiller(settings.watermark_flux_path)
+                _models["filler"] = KontextFiller(settings.watermark_flux_path)
         return _models["filler"]

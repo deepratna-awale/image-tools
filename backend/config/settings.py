@@ -102,15 +102,16 @@ class Settings(BaseSettings):
     upscale_max_output_pixels: int = 4096 * 4096
     upscale_cpu_max_input_pixels: int = 1024 * 1024
     # Watermark remover (GPU only): Florence-2 (MIT) finds the watermark, then a diffusion
-    # inpainting model repaints it: "flux" (FLUX.1 Fill [dev], best results, non-commercial
-    # license) or "sdxl" (SDXL Inpainting 0.1, OpenRAIL++, commercial use allowed). The
+    # model repaints it: "flux" (FLUX.1 Kontext [dev] edits it out, best results,
+    # non-commercial license) or "sdxl" (SDXL Inpainting 0.1, OpenRAIL++, commercial use
+    # allowed). The
     # GPU image bakes the chosen models into U2NET_HOME (deployment/gpu/Dockerfile).
     watermark_detector_path: str = os.path.join(
         os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "florence-2-large"
     )
     watermark_fill_model: str = "flux"
     watermark_flux_path: str = os.path.join(
-        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "flux-fill"
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "flux-kontext"
     )
     watermark_sdxl_path: str = os.path.join(
         os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "sdxl-inpaint"
@@ -119,8 +120,6 @@ class Settings(BaseSettings):
     # side is this many pixels for the model, then only the masked pixels are pasted back
     watermark_work_size: int = 1024
     watermark_steps: int = 28
-    # How much of the seeded fill FLUX repaints: 1.0 ignores the seed and can invent lettering
-    watermark_strength: float = 0.8
     watermark_max_input_pixels: int = 6000 * 6000
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,

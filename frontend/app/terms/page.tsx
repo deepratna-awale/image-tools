@@ -82,7 +82,7 @@ export default function TermsPage() {
           <strong>non-commercial</strong> license (CC BY-NC 4.0).
         </li>
         <li>
-          Watermark Remover uses FLUX.1 Fill [dev], released by Black Forest Labs under a{" "}
+          Watermark Remover uses FLUX.1 Kontext [dev], released by Black Forest Labs under a{" "}
           <strong>non-commercial</strong> license.
         </li>
       </ul>

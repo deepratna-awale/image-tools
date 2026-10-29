@@ -49,7 +49,7 @@ RUN python3 -c "from rembg import new_session; new_session('${REMBG_MODEL}', pro
        done
 
 # Watermark remover: Florence-2 large (MIT) finds watermarks, and an inpainting model
-# repaints them: "flux" (FLUX.1 Fill [dev], non-commercial license, gated: the build
+# repaints them: "flux" (FLUX.1 Kontext [dev], non-commercial license, gated: the build
 # needs an hf_token secret from an account that accepted it) or "sdxl" (SDXL Inpainting
 # 0.1, OpenRAIL++, with the fp16-safe SDXL VAE). Only the weights the pipelines load.
 ARG WATERMARK_FILL_MODEL=flux

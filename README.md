@@ -26,7 +26,7 @@
 | [Blur Background](https://imagetools.top/blur-background) | Blur what's behind your subject for a portrait-mode look. |
 | [Sky Swap](https://imagetools.top/sky-swap) | Replace a dull sky with a sunset, golden hour or a sky of your own. |
 | [Image Upscaler](https://imagetools.top/upscaler) | Enlarge up to 4× (any factor, like 1.5×) or to an exact size, cropping to fit. Detects anime/art vs. photos and uses the matching Real-ESRGAN model. |
-| [Watermark Remover](https://imagetools.top/watermark-remover) | Florence-2 finds watermarks, logos and text, and FLUX.1 Fill repaints the photo where they were. Fix the marked area with a brush first if you like. |
+| [Watermark Remover](https://imagetools.top/watermark-remover) | Florence-2 finds watermarks, logos and text, and FLUX.1 Kontext edits them out. Fix the marked area with a brush first if you like. |
 | Outpainting | Extend a photo beyond its edges. *Coming soon.* |
 
 ### Edit & Convert
@@ -197,4 +197,4 @@ Browser-only tools skip steps 1 and 2.
 
 ## License
 
-[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial, the background-removal model (BRIA RMBG 2.0) is CC BY-NC 4.0, the watermark remover's FLUX.1 Fill [dev] is under the FLUX.1 [dev] non-commercial license (`WATERMARK_FILL_MODEL=sdxl` switches to SDXL Inpainting, which allows commercial use), and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).
+[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial, the background-removal model (BRIA RMBG 2.0) is CC BY-NC 4.0, the watermark remover's FLUX.1 Kontext [dev] is under the FLUX.1 [dev] non-commercial license (`WATERMARK_FILL_MODEL=sdxl` switches to SDXL Inpainting, which allows commercial use), and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).

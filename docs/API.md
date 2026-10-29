@@ -150,8 +150,8 @@ URL and append `scale` (or `width`/`height`) to the form.
 ## Watermark removal
 
 **`https://imagetools.top/api/v1/watermark-removal`** takes the same keys, limits and job
-flow. Florence-2 finds the watermark (text or logo) and an AI inpainting model (FLUX.1
-Fill) repaints the photo where it was. The result is a PNG at the original size
+flow. Florence-2 finds the watermark (text or logo) and an AI image editor (FLUX.1
+Kontext) removes it, rebuilding the photo underneath. The result is a PNG at the original size
 (transparency is kept). It runs on a GPU; the first job after a quiet spell waits a
 minute or two for it to start.
 
