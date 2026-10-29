@@ -1,8 +1,8 @@
 """Animated images (GIF, WebP, APNG) through processors that handle one still image.
 
 AnimatedProcessor splits an animation into frames, runs each frame through the
-wrapped processor and stitches the results into an animated WebP, which keeps
-transparency. Still images go straight to the wrapped processor.
+wrapped processor and stitches the results into a lossless animated WebP,
+which keeps transparency and every pixel of the cutouts. Still images go straight to the wrapped processor.
 """
 
 import asyncio
@@ -15,7 +15,9 @@ from PIL import Image, ImageSequence
 logger = logging.getLogger(__name__)
 
 DEFAULT_FRAME_MS = 100
-WEBP_QUALITY = 90
+# Lossless output unless that gets too big to keep (long, large animations)
+MAX_LOSSLESS_BYTES = 25 * 1024 * 1024
+LOSSY_QUALITY = 95
 
 
 def is_animated(image_data: bytes) -> bool:
@@ -98,15 +100,29 @@ class AnimatedProcessor:
     def _join(frames: List[Image.Image], durations: List[int], loop: int) -> bytes:
         size = frames[0].size
         frames = [frame if frame.size == size else frame.resize(size) for frame in frames]
-        buffer = io.BytesIO()
-        frames[0].save(
-            buffer,
-            format="WEBP",
-            save_all=True,
-            append_images=frames[1:],
-            duration=durations,
-            loop=loop,
-            quality=WEBP_QUALITY,
-            method=4,
+
+        def encode(**options) -> bytes:
+            buffer = io.BytesIO()
+            frames[0].save(
+                buffer,
+                format="WEBP",
+                save_all=True,
+                append_images=frames[1:],
+                duration=durations,
+                loop=loop,
+                method=4,
+                # Every frame whole: partial frames can turn transparent areas opaque
+                kmin=1,
+                kmax=1,
+                **options,
+            )
+            return buffer.getvalue()
+
+        result = encode(
+            lossless=True,
+            quality=80,  # with lossless, how hard to compress (slower, smaller), not quality
         )
-        return buffer.getvalue()
+        if len(result) > MAX_LOSSLESS_BYTES:
+            logger.info(f"Lossless animation is {len(result) / 1e6:.0f} MB; saving it at quality {LOSSY_QUALITY}")
+            result = encode(quality=LOSSY_QUALITY)
+        return result

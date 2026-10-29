@@ -50,6 +50,8 @@ async def test_animation_comes_back_as_animated_webp(fmt):
     rgba = image.convert("RGBA")
     assert rgba.getpixel((0, 0))[3] == 0
     assert rgba.getpixel((7, 0))[3] == 255
+    # Lossless: the kept half is exactly the input frame
+    assert rgba.getpixel((7, 0))[:3] == (40, 0, 0)
 
 
 async def test_still_image_goes_straight_through():
@@ -87,3 +89,13 @@ def test_mime_types():
     assert image_mime_type(make_animation(2, "WEBP")) == "image/webp"
     assert image_mime_type(make_animation(2, "GIF")) == "image/gif"
     assert image_mime_type(make_still()) == "image/png"
+
+
+async def test_oversized_lossless_animation_falls_back_to_lossy(monkeypatch):
+    monkeypatch.setattr("core.animation.MAX_LOSSLESS_BYTES", 10)
+    result = await AnimatedProcessor(CutoutProcessor()).process(make_animation(3))
+
+    image = Image.open(io.BytesIO(result))
+    assert image.n_frames == 3
+    image.seek(1)
+    assert image.convert("RGBA").getpixel((0, 0))[3] == 0
