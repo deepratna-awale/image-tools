@@ -6,6 +6,7 @@ import io
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
+from core.animation import image_mime_type
 from core.models.job import Job, ServiceType, JobStatus, JobResult, BatchJob, BatchJobResult
 from core.messaging.queue_manager import QueueManager
 from core.messaging.rabbitmq_adapter import RabbitMQAdapter
@@ -317,7 +318,8 @@ class ImageJobService:
                             file_data = await self.storage_manager.download_file(result.output_url)
                             if file_data:
                                 # Add to zip with a proper filename
-                                filename = f"processed_image_{i+1}.png"
+                                extension = image_mime_type(file_data).split("/")[1].replace("jpeg", "jpg")
+                                filename = f"processed_image_{i+1}.{extension}"
                                 zip_file.writestr(filename, file_data)
                         except Exception as e:
                             logger.warning(f"Failed to add result {result.job_id} to zip: {e}")

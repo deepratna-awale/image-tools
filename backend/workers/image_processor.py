@@ -8,6 +8,7 @@ from core.models.job import Job, ServiceType
 from core.messaging.queue_manager import QueueManager
 from core.messaging.rabbitmq_adapter import RabbitMQAdapter
 from core.messaging.sqs_adapter import SQSAdapter
+from core.animation import AnimatedProcessor
 from core.gpu import GpuProcessor
 from services.background_removal.service import BackgroundRemovalService
 from services.background_changing.service import BackgroundChangingService
@@ -44,7 +45,11 @@ class ImageProcessorWorker:
         # Model work goes to the GPU endpoint when one is configured
         if settings.gpu_enabled:
             for service_type, service in self.services.items():
-                service.processor = GpuProcessor(service_type.value, service.processor)
+                if isinstance(service.processor, AnimatedProcessor):
+                    # Frames go to the GPU one by one (its handler cuts out still images)
+                    service.processor.inner = GpuProcessor(service_type.value, service.processor.inner)
+                else:
+                    service.processor = GpuProcessor(service_type.value, service.processor)
             logger.info(f"Sending model work to GPU endpoint {settings.runpod_endpoint_id}")
         
         self.running = False
