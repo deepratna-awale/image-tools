@@ -178,6 +178,22 @@ def test_finder_keeps_every_phrase_and_big_text():
     ]
 
 
+def test_a_shifted_edit_is_lined_up_with_the_original():
+    import cv2
+
+    rng = np.random.default_rng(0)
+    photo = cv2.GaussianBlur(rng.integers(0, 255, (300, 900, 3)).astype(np.uint8), (0, 0), 3)
+    # The edit comes back a little zoomed and moved, with the watermark area repainted
+    edit = cv2.warpAffine(photo, np.float32([[1.03, 0, -12], [0, 1.03, 7]]), (900, 300), borderMode=cv2.BORDER_REFLECT)
+    edit[120:180, 200:700] = 255
+    mask = np.zeros((300, 900), np.uint8)
+    mask[110:190, 190:710] = 255
+    lined_up = np.asarray(models.align(Image.fromarray(edit), Image.fromarray(photo), Image.fromarray(mask)))
+    outside = mask == 0
+    assert np.abs(edit.astype(int) - photo)[outside].mean() > 5
+    assert np.abs(lined_up.astype(int) - photo)[outside].mean() < 1.5
+
+
 def test_masked_area_is_filled_and_the_rest_kept(client, queue, model):
     job_id = submit(client, mask=mask_png()).json()["job_id"]
     run_worker(queue)

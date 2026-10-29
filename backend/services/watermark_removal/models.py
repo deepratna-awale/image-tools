@@ -120,15 +120,48 @@ class KontextFiller(Filler):
 
     @torch.inference_mode()
     def fill(self, image: Image.Image, mask: Image.Image) -> Image.Image:
-        # The whole crop is edited; the caller pastes back only the masked pixels
+        # The whole crop is edited at the trained size nearest its shape; the caller
+        # pastes back only the masked pixels
+        from diffusers.pipelines.flux.pipeline_flux_kontext import PREFERRED_KONTEXT_RESOLUTIONS
+
+        ratio = image.width / image.height
+        width, height = min(PREFERRED_KONTEXT_RESOLUTIONS, key=lambda size: abs(ratio - size[0] / size[1]))
         edited = self.pipe(
-            image=image,
+            image=image.resize((width, height), Image.LANCZOS),
             prompt=EDIT_PROMPT,
+            width=width,
+            height=height,
             num_inference_steps=settings.watermark_steps,
             guidance_scale=2.5,
             generator=torch.Generator("cuda").manual_seed(0),
+            _auto_resize=False,
         ).images[0]
-        return edited.resize(image.size, Image.LANCZOS)
+        return align(edited.resize(image.size, Image.LANCZOS), image, mask)
+
+
+def align(edited: Image.Image, original: Image.Image, mask: Image.Image) -> Image.Image:
+    """Kontext can shift or zoom the picture a little; warp its edit back onto the
+    original, matching on the pixels outside the mask, so the pasted area lines up"""
+    import cv2
+
+    target = np.asarray(original.convert("L"), dtype=np.float32)
+    moved = np.asarray(edited.convert("L"), dtype=np.float32)
+    outside = (np.asarray(mask) == 0).astype(np.uint8)
+    warp = np.eye(2, 3, dtype=np.float32)
+    try:
+        criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 100, 1e-5)
+        _, warp = cv2.findTransformECC(target, moved, warp, cv2.MOTION_AFFINE, criteria, outside, 5)
+    except cv2.error:
+        logger.warning("Could not line the edit up with the original; using it as it is")
+        return edited
+    pixels = cv2.warpAffine(
+        np.asarray(edited.convert("RGB")),
+        warp,
+        original.size,
+        flags=cv2.INTER_LANCZOS4 | cv2.WARP_INVERSE_MAP,
+        borderMode=cv2.BORDER_REPLICATE,
+    )
+    return Image.fromarray(pixels)
 
 
 class SdxlFiller(Filler):
