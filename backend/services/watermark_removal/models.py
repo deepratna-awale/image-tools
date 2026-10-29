@@ -120,6 +120,7 @@ class FluxFiller(Filler):
             width=image.width,
             height=image.height,
             num_inference_steps=settings.watermark_steps,
+            strength=settings.watermark_strength,
             guidance_scale=30,
             generator=torch.Generator("cuda").manual_seed(0),
         ).images[0]

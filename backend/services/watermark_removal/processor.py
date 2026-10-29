@@ -19,6 +19,8 @@ CONTEXT = 96
 GROW = 4
 # Blend the filled pixels into the original over this many pixels past the mask edge
 FEATHER = 3
+# How far the classic inpaint that seeds the diffusion fill looks around each pixel
+PREFILL_RADIUS = 5
 
 
 def load_mask(mask_data: bytes, size: Tuple[int, int]) -> np.ndarray:
@@ -129,7 +131,10 @@ class WatermarkRemovalProcessor:
             # The model works best near its training size, so small crops are enlarged too
             factor = settings.watermark_work_size / max(crop_w, crop_h)
             size = tuple(max(filler.multiple, round(side * factor / filler.multiple) * filler.multiple) for side in (crop_w, crop_h))
-            work_rgb = Image.fromarray(crop_rgb).resize(size, Image.LANCZOS)
+            # Diffusion fill tends to paint new lettering into a text-shaped hole, so it starts
+            # from a plain classic inpaint of the hole and only reworks that into real detail
+            prefilled = cv2.inpaint(crop_rgb, crop_mask, PREFILL_RADIUS, cv2.INPAINT_TELEA)
+            work_rgb = Image.fromarray(prefilled).resize(size, Image.LANCZOS)
             work_mask = Image.fromarray(crop_mask * 255).resize(size, Image.BILINEAR).point(lambda v: 255 if v else 0)
             filled = filler.fill(work_rgb, work_mask).convert("RGB").resize((crop_w, crop_h), Image.LANCZOS)
             logger.info(f"Repainted a {crop_w}x{crop_h} region at {size[0]}x{size[1]}")

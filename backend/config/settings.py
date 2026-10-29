@@ -119,6 +119,8 @@ class Settings(BaseSettings):
     # side is this many pixels for the model, then only the masked pixels are pasted back
     watermark_work_size: int = 1024
     watermark_steps: int = 28
+    # How much of the seeded fill FLUX repaints: 1.0 ignores the seed and can invent lettering
+    watermark_strength: float = 0.8
     watermark_max_input_pixels: int = 6000 * 6000
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
