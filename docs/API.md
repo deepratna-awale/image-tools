@@ -1,7 +1,8 @@
 # Background Removal API
 
 Other apps can remove image backgrounds through the same service the site uses, and
-enlarge images with the upscaler ([Upscaling](#upscaling)).
+enlarge images with the upscaler ([Upscaling](#upscaling)) and remove watermarks
+([Watermark removal](#watermark-removal)).
 
 - **Base URL:** `https://imagetools.top/api/v1/background-removal`
 - **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`).
@@ -146,6 +147,37 @@ curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o upscaled.png
 The `removeBackground` function above works for it too: point `API` at the upscaling
 URL and append `scale` (or `width`/`height`) to the form.
 
+## Watermark removal
+
+**`https://imagetools.top/api/v1/watermark-removal`** takes the same keys, limits and job
+flow. Florence-2 finds the watermark (text or logo) and an AI image editor (FLUX.1
+Kontext) removes it, rebuilding the photo underneath. The result is a PNG at the original size
+(transparency is kept). It runs on a GPU; the first job after a quiet spell waits a
+minute or two for it to start.
+
+Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`:
+
+| Field | What it does |
+| --- | --- |
+| `mask` | Optional. What to remove: an image white where to remove and black elsewhere (or opaque strokes on a transparent layer), stretched to fit if it's another size. Without it the watermark is found automatically; if none is found the job fails with `No watermark found`. A batch shares one mask. |
+| `mode` | `remove` (default) or `detect`: only find the watermark and return its mask (white on black PNG) as the result, to check or edit before removing. |
+
+Images can be up to 36 megapixels.
+
+```bash
+API=https://imagetools.top/api/v1/watermark-removal
+
+# Find and remove the watermark by itself
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" $API/process | jq -r .job_id)
+# or remove what's white in your own mask
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" -F "mask=@mask.png" $API/process | jq -r .job_id)
+
+until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 2; done
+curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o clean.png
+```
+
+Only remove watermarks from images you own or have permission to edit.
+
 ## Calling from a browser
 
 Keep the key on your server where you can: call the API from your backend (or a
@@ -193,7 +225,7 @@ API_MAX_KEYS=20
 
 Then restart: `sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build`.
 
-How it fits together: Caddy sends `/api/v1/background-removal/*` and `/api/v1/upscaling/*` straight to the
+How it fits together: Caddy sends `/api/v1/background-removal/*`, `/api/v1/upscaling/*` and `/api/v1/watermark-removal/*` straight to the
 API container and marks those requests as public; the API checks the key and the
 rate limit only for marked requests. The site's own pages reach the API over the
 internal Docker network, so they keep working with or without keys. The API port

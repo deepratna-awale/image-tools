@@ -128,7 +128,7 @@ export class BackgroundRemovalAPI {
 
 }
 
-export type ToolService = "background-changing" | "sky-replacement" | "ai-shield" | "upscaling";
+export type ToolService = "background-changing" | "sky-replacement" | "ai-shield" | "upscaling" | "watermark-removal";
 
 async function errorMessage(response: Response, fallback: string): Promise<string> {
   try {

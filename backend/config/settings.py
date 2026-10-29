@@ -101,6 +101,26 @@ class Settings(BaseSettings):
     # will take; about a minute per megapixel per core on the photo model
     upscale_max_output_pixels: int = 4096 * 4096
     upscale_cpu_max_input_pixels: int = 1024 * 1024
+    # Watermark remover (GPU only): Florence-2 (MIT) finds the watermark, then a diffusion
+    # model repaints it: "flux" (FLUX.1 Kontext [dev] edits it out, best results,
+    # non-commercial license) or "sdxl" (SDXL Inpainting 0.1, OpenRAIL++, commercial use
+    # allowed). The
+    # GPU image bakes the chosen models into U2NET_HOME (deployment/gpu/Dockerfile).
+    watermark_detector_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "florence-2-large"
+    )
+    watermark_fill_model: str = "flux"
+    watermark_flux_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "flux-kontext"
+    )
+    watermark_sdxl_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "sdxl-inpaint"
+    )
+    # Each masked region is cropped with surrounding context and scaled so its longer
+    # side is this many pixels for the model, then only the masked pixels are pasted back
+    watermark_work_size: int = 1024
+    watermark_steps: int = 28
+    watermark_max_input_pixels: int = 6000 * 6000
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
     # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),
@@ -125,8 +145,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     
-    # Public API for other apps (requests Caddy forwards from /api/v1/background-removal
-    # and /api/v1/upscaling).
+    # Public API for other apps (requests Caddy forwards from /api/v1/background-removal,
+    # /api/v1/upscaling and /api/v1/watermark-removal).
     # Comma-separated keys; callers send one as "X-API-Key" or "Authorization: Bearer".
     # With no keys set, the public API refuses every request.
     api_keys: str = ""
