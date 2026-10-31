@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CodeXml, Gift, Layers, UserX } from "lucide-react";
 import { toolGroups } from "@/lib/tools";
 import ToolTile from "./components/tool-tile";
@@ -6,7 +7,12 @@ const HIGHLIGHTS = [
   { icon: Gift, title: "Free", text: "Every tool is free to use." },
   { icon: UserX, title: "No sign-up", text: "Open a tool and drop in an image." },
   { icon: Layers, title: "Batch ready", text: "Resize, watermark or clean many images at once." },
-  { icon: CodeXml, title: "Developer API", text: "Call background removal from your own apps." },
+  {
+    icon: CodeXml,
+    title: "Developer API",
+    text: "Get a free key and call background removal, upscaling and more from your own apps.",
+    href: "/api-keys",
+  },
 ];
 
 export default function Home() {
@@ -46,15 +52,31 @@ export default function Home() {
       </div>
 
       <section className="mt-20 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="flex gap-3 rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur">
-            <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
-            <div className="flex flex-col gap-1">
-              <span className="font-medium">{title}</span>
-              <span className="text-sm text-muted-foreground">{text}</span>
+        {HIGHLIGHTS.map(({ icon: Icon, title, text, href }) => {
+          const body = (
+            <>
+              <Icon className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div className="flex flex-col gap-1">
+                <span className="font-medium">{title}</span>
+                <span className="text-sm text-muted-foreground">{text}</span>
+              </div>
+            </>
+          );
+          const cardClass = "flex gap-3 rounded-2xl border border-border/60 bg-card/50 p-5 backdrop-blur";
+          return href ? (
+            <Link
+              key={title}
+              href={href}
+              className={`${cardClass} transition-colors hover:border-primary/60 hover:bg-card`}
+            >
+              {body}
+            </Link>
+          ) : (
+            <div key={title} className={cardClass}>
+              {body}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
     </main>
   );
