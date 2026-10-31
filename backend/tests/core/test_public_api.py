@@ -68,6 +68,7 @@ def test_public_request_with_key_is_accepted(client, sample_image_bytes, auth):
 
 def test_public_api_is_off_without_keys(client, monkeypatch):
     monkeypatch.setattr(settings, "api_keys", "")
+    monkeypatch.setattr(settings, "api_public_signup", False)
 
     response = client.get(
         "/api/v1/background-removal/status/abc", headers={**PUBLIC, "X-API-Key": "key-one"}

@@ -90,7 +90,8 @@ def test_created_key_is_shown_once_and_stored_hashed(client, store):
     assert created["key"].encode() not in raw
 
 
-def test_created_key_works_until_revoked(client, sample_image_bytes):
+def test_created_key_works_until_revoked(client, sample_image_bytes, monkeypatch):
+    monkeypatch.setattr(settings, "api_public_signup", False)
     key = create(client)
 
     assert submit(client, key["key"], sample_image_bytes).status_code == 200
@@ -208,7 +209,7 @@ def test_signups_per_day_across_everyone(client, monkeypatch):
 
 def test_signup_attempts_are_throttled_per_minute(client):
     for _ in range(5):
-        client.post(SIGNUP, json={"name": ""}, headers={"X-Client-Ip": "9.9.9.9"})
+        client.post(SIGNUP, json={"name": "Bot", "website": "x"}, headers={"X-Client-Ip": "9.9.9.9"})
 
     assert sign_up(client, ip="9.9.9.9").status_code == 429
     assert sign_up(client, ip="9.9.9.8").status_code == 200
