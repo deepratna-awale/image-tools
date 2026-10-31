@@ -6,7 +6,7 @@ enlarge images with the upscaler ([Upscaling](#upscaling)) and remove watermarks
 
 - **Base URL:** `https://imagetools.top/api/v1/background-removal`
 - **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`).
-  Keys are created at [`https://imagetools.top/api-keys`](https://imagetools.top/api-keys) (admin only, see below).
+  Anyone can create a free key at [`https://imagetools.top/api-keys`](https://imagetools.top/api-keys) (see [Getting a key](#getting-a-key)).
 - **Input:** any common image format (JPEG, PNG, WebP…), up to 10 MB per image, up to 10 images per batch
 - **Output:** a transparent PNG (or a ZIP of PNGs for a batch)
 
@@ -31,22 +31,44 @@ Errors are JSON with a `detail` message:
 | --- | --- |
 | 400 | Not an image, or more than 10 files in a batch |
 | 401 | Missing or wrong API key |
-| 403 | No API keys exist on the server, so the public API is off |
+| 403 | The public API is off on this server |
 | 404 | Unknown job, or its result isn't ready |
 | 413 | Image over the size limit |
 | 429 | Per-minute or daily limit hit; wait the number of seconds in `Retry-After` |
 
+## Getting a key
+
+Open [`/api-keys`](https://imagetools.top/api-keys), say what the key is for, and
+press **Create key**. The key is shown once; copy it then, since only its hash is
+stored. On the same page you can paste a key to see today's usage or revoke it.
+
+To keep the free tier fair and the server responsive:
+
+- each network address can create **3 keys a day** and hold **5 active keys** (revoke
+  one to free a slot);
+- the site creates at most **100 free keys a day** for everyone together.
+
+If you need more than a free key allows, open an issue on the repo and ask for a key
+with a higher limit.
+
 ## Limits
 
-Per API key, over a rolling minute: **20 submissions** (`POST`) and **300
-status/result requests** (`GET`). Poll about once a second, not faster.
+Over a rolling minute, per key: **5 submissions** (`POST`) for free keys, **20** for
+keys the admin creates, and **300 status/result requests** (`GET`) for either. Poll
+about once a second, not faster.
 
 Per day (reset at 00:00 UTC), counted in images (a batch of 5 counts as 5):
 
-- **200 images per key** by default; a key can be given its own limit when it is created.
-- **1,000 images for all keys together.** Once that's reached every key gets 429 until
-  midnight UTC. This is the ceiling on how much server time other apps can take, so the
-  API can't run up a bill or slow the site down however a key is used.
+| | Free keys | Admin keys |
+| --- | --- | --- |
+| Per key | **50 images** | **200 images** by default, or a limit set at creation |
+| Shared pool | **300 images** for all free keys together | none |
+
+On top of both, **1,000 images a day for all keys together.** Once that's reached
+every key gets 429 until midnight UTC. This is the ceiling on how much server time
+other apps can take, so the API can't run up a bill or slow the site down however a
+key is used. GPU work also has its own monthly budget; once it's spent, jobs run on
+the CPU (slower, same result) until the next month.
 
 A daily-limit 429 says which limit was hit in `detail`, and `Retry-After` counts
 down to midnight UTC. Requests from the site's own pages are never counted.
@@ -188,22 +210,33 @@ If a page must call the API directly, its origin has to be on the server's
 allowlist (`ALLOWED_ORIGINS`, below), and you should treat that key as public and
 give it its own key with a low daily limit so it can be revoked on its own.
 
-## Managing keys
+## Checking or revoking your key
 
-Open `/api-keys` on the site and enter the admin token (`ADMIN_TOKEN` in the
-server's `.env`; `deploy/oracle/setup.sh` generates one, and `grep ADMIN_TOKEN .env`
-shows it). From there you can:
+Besides the page, a key can describe or revoke itself (send it as `X-API-Key`):
 
-- **Create** a key with a name and, optionally, its own images-per-day limit. The full
-  key is shown once; only its SHA-256 hash is stored.
-- **See** each key's usage today, when it was last used, and the total against the
-  all-keys cap.
-- **Revoke** a key; it stops working on the next request.
+| Method | Path | What it does |
+| --- | --- | --- |
+| GET | `https://imagetools.top/api/api-keys/me` | Name, `daily_limit`, `used_today`, `rate_limit_per_minute`, `resets_in_seconds` |
+| DELETE | `https://imagetools.top/api/api-keys/me` | Revoke the key; it stops working on the next request |
 
-Only the admin can create keys: there is no public sign-up, so nobody else can mint
-keys to get around the limits. Wrong admin tokens are throttled to 10 a minute.
-Keys and daily counts live in `api_keys.sqlite3` on the storage volume, so they
-survive restarts and rebuilds. Without `ADMIN_TOKEN` the page is disabled.
+## Managing keys (admin)
+
+At the bottom of `/api-keys`, **Admin** asks for the admin token (`ADMIN_TOKEN` in
+the server's `.env`; `deploy/oracle/setup.sh` generates one, and
+`grep ADMIN_TOKEN .env` shows it). From there you can:
+
+- **Create** a key with a name and, optionally, its own images-per-day limit. Admin
+  keys don't count against the free-key pool or sign-up limits. The full key is shown
+  once; only its SHA-256 hash is stored.
+- **See** each key's usage today, when it was last used, and the totals against the
+  all-keys cap and the free-key pool. Free keys are listed under **Self-serve keys**.
+- **Revoke** any key; it stops working on the next request.
+
+Wrong admin tokens are throttled to 10 a minute. Keys and daily counts live in
+`api_keys.sqlite3` on the storage volume, so they survive restarts and rebuilds.
+Network addresses are never stored as such: sign-up limits use a salted hash of the
+address. Without `ADMIN_TOKEN` the admin view is disabled; the free sign-up keeps
+working unless `API_PUBLIC_SIGNUP=false`.
 
 ## Server setup
 
@@ -221,6 +254,16 @@ API_POLL_LIMIT_PER_MINUTE=300
 API_DAILY_LIMIT_PER_KEY=200
 API_DAILY_LIMIT_TOTAL=1000
 API_MAX_KEYS=20
+# Self-serve keys: on/off, per key per day, all free keys per day, submissions per minute
+API_PUBLIC_SIGNUP=true
+API_PUBLIC_DAILY_LIMIT_PER_KEY=50
+API_PUBLIC_DAILY_LIMIT_TOTAL=300
+API_PUBLIC_RATE_LIMIT_PER_MINUTE=5
+# Sign-ups: new keys per address per day, active keys per address, per day overall, ever active
+API_PUBLIC_KEYS_PER_IP_PER_DAY=3
+API_PUBLIC_ACTIVE_KEYS_PER_IP=5
+API_PUBLIC_SIGNUPS_PER_DAY=100
+API_PUBLIC_MAX_KEYS=2000
 ```
 
 Then restart: `sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build`.

@@ -1,9 +1,14 @@
 """API keys for other apps, and how many images each may process per day.
 
-Keys are created and revoked from the /api-keys page (admin token required) and
-stored as SHA-256 hashes in a small SQLite file on the shared storage volume; the
-full key is shown once, at creation. Keys listed in API_KEYS in .env keep working
-alongside them. Daily counts live in the same file, so restarts don't reset them.
+Two kinds of key live here. Admin keys are created and revoked from the /api-keys
+page with the admin token. Public keys are self-serve: anyone can create one on the
+same page, with a smaller daily quota, a shared pool for all public keys, and a cap
+on how many each network address may create (stored only as a salted hash).
+
+Keys are stored as SHA-256 hashes in a small SQLite file on the shared storage
+volume; the full key is shown once, at creation. Keys listed in API_KEYS in .env
+keep working alongside them. Daily counts live in the same file, so restarts don't
+reset them.
 """
 import hashlib
 import hmac
@@ -18,8 +23,9 @@ from typing import Dict, List, Optional
 from config.settings import settings
 
 KEY_PREFIX = "it_"
-# Counts against the global daily cap but belongs to no key
+# Count against the global daily cap, and the pool for all public keys; belong to no key
 TOTAL = "*"
+PUBLIC_TOTAL = "public*"
 
 
 class QuotaExceeded(Exception):
@@ -28,12 +34,17 @@ class QuotaExceeded(Exception):
         self.retry_after = retry_after
 
 
+class SignupRefused(QuotaExceeded):
+    """A public key can't be created right now; retry_after says when it may work"""
+
+
 @dataclass
 class ApiKey:
     id: str
     name: str
     daily_limit: int
     from_env: bool = False
+    public: bool = False
 
 
 def hash_key(key: str) -> str:
@@ -58,6 +69,7 @@ class ApiKeyStore:
         self._path = path
         self._lock = threading.Lock()
         self._conn: Optional[sqlite3.Connection] = None
+        self._salt = ""
 
     @property
     def path(self) -> str:
@@ -86,10 +98,28 @@ class ApiKeyStore:
                     images INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (key_id, day)
                 );
+                CREATE TABLE IF NOT EXISTS meta (
+                    name TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
                 """
             )
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(api_keys)")}
+            if "public" not in columns:
+                conn.execute("ALTER TABLE api_keys ADD COLUMN public INTEGER NOT NULL DEFAULT 0")
+            if "ip_hash" not in columns:
+                conn.execute("ALTER TABLE api_keys ADD COLUMN ip_hash TEXT")
+            conn.execute("CREATE INDEX IF NOT EXISTS api_keys_ip_hash ON api_keys (ip_hash)")
+            conn.execute(
+                "INSERT OR IGNORE INTO meta (name, value) VALUES ('ip_salt', ?)", (secrets.token_hex(16),)
+            )
+            self._salt = conn.execute("SELECT value FROM meta WHERE name = 'ip_salt'").fetchone()[0]
             self._conn = conn
         return self._conn
+
+    def _hash_ip(self, ip: str) -> str:
+        # Salted so the stored value can't be matched against a list of addresses
+        return hash_key(self._salt + ip)
 
     def close(self) -> None:
         with self._lock:
@@ -99,28 +129,105 @@ class ApiKeyStore:
 
     # Keys
 
-    def create(self, name: str, daily_limit: Optional[int] = None) -> Dict:
-        """Create a key; the returned dict is the only place the full key appears"""
+    @staticmethod
+    def _new_record(name: str, daily_limit: int, public: bool) -> Dict:
         key = KEY_PREFIX + secrets.token_urlsafe(30)
-        record = {
+        return {
             "id": secrets.token_hex(8),
             "name": name,
             "prefix": key[:10],
+            "key": key,
             "key_hash": hash_key(key),
-            "daily_limit": daily_limit or settings.api_daily_limit_per_key,
+            "daily_limit": daily_limit,
             "created_at": _now(),
+            "public": int(public),
+            "ip_hash": None,
         }
+
+    @staticmethod
+    def _insert(db: sqlite3.Connection, record: Dict) -> None:
+        db.execute(
+            "INSERT INTO api_keys (id, name, prefix, key_hash, daily_limit, created_at, public, ip_hash)"
+            " VALUES (:id, :name, :prefix, :key_hash, :daily_limit, :created_at, :public, :ip_hash)",
+            record,
+        )
+
+    def create(self, name: str, daily_limit: Optional[int] = None) -> Dict:
+        """Create an admin key; the returned dict is the only place the full key appears"""
+        record = self._new_record(name, daily_limit or settings.api_daily_limit_per_key, public=False)
         with self._lock:
             db = self._db()
-            active = db.execute("SELECT COUNT(*) FROM api_keys WHERE revoked_at IS NULL").fetchone()[0]
+            active = db.execute(
+                "SELECT COUNT(*) FROM api_keys WHERE revoked_at IS NULL AND public = 0"
+            ).fetchone()[0]
             if active >= settings.api_max_keys:
                 raise ValueError(f"You already have {active} active keys; revoke one first")
-            db.execute(
-                "INSERT INTO api_keys (id, name, prefix, key_hash, daily_limit, created_at)"
-                " VALUES (:id, :name, :prefix, :key_hash, :daily_limit, :created_at)",
-                record,
-            )
-        return {**self._public(record, 0), "key": key}
+            self._insert(db, record)
+        return {**self._public(record, 0), "key": record["key"]}
+
+    def create_public(self, name: str, ip: str) -> Dict:
+        """Create a self-serve key, or raise SignupRefused when a signup limit is hit"""
+        record = self._new_record(name, settings.api_public_daily_limit_per_key, public=True)
+        with self._lock:
+            db = self._db()
+            record["ip_hash"] = self._hash_ip(ip)
+            today = _today() + "%"
+            db.execute("BEGIN IMMEDIATE")
+            try:
+                counts = db.execute(
+                    """
+                    SELECT
+                        SUM(created_at LIKE :today),
+                        SUM(created_at LIKE :today AND ip_hash = :ip),
+                        SUM(revoked_at IS NULL AND ip_hash = :ip),
+                        SUM(revoked_at IS NULL)
+                    FROM api_keys WHERE public = 1
+                    """,
+                    {"today": today, "ip": record["ip_hash"]},
+                ).fetchone()
+                today_all, today_ip, active_ip, active_all = (value or 0 for value in counts)
+                midnight = seconds_until_utc_midnight()
+                if today_ip >= settings.api_public_keys_per_ip_per_day:
+                    raise SignupRefused(
+                        f"You can create {settings.api_public_keys_per_ip_per_day} keys a day; "
+                        "try again after 00:00 UTC",
+                        midnight,
+                    )
+                if active_ip >= settings.api_public_active_keys_per_ip:
+                    raise SignupRefused(
+                        f"You already have {active_ip} active keys; revoke one you don't use first",
+                        3600,
+                    )
+                if today_all >= settings.api_public_signups_per_day or active_all >= settings.api_public_max_keys:
+                    raise SignupRefused(
+                        "No more keys can be created today; try again after 00:00 UTC", midnight
+                    )
+                self._insert(db, record)
+                db.execute("COMMIT")
+            except BaseException:
+                db.execute("ROLLBACK")
+                raise
+        return {**self._public(record, 0), "key": record["key"]}
+
+    def describe(self, api_key: "ApiKey") -> Dict:
+        """What a key's owner may see about it: limits and today's usage"""
+        with self._lock:
+            row = self._db().execute("SELECT * FROM api_keys WHERE id = ?", (api_key.id,)).fetchone()
+        used = self.used_today(api_key.id)
+        if row is None:  # a key from .env
+            return {
+                "name": api_key.name,
+                "daily_limit": api_key.daily_limit,
+                "used_today": used,
+                "public": False,
+                "rate_limit_per_minute": settings.api_rate_limit_per_minute,
+                "resets_in_seconds": seconds_until_utc_midnight(),
+            }
+        return {
+            **self._public(dict(row), used),
+            "rate_limit_per_minute": rate_limit_for(api_key),
+            "resets_in_seconds": seconds_until_utc_midnight(),
+        }
 
     def revoke(self, key_id: str) -> bool:
         with self._lock:
@@ -143,6 +250,8 @@ class ApiKeyStore:
             "daily_limit_total": settings.api_daily_limit_total,
             "default_daily_limit": settings.api_daily_limit_per_key,
             "max_keys": settings.api_max_keys,
+            "public_used_today": self.used_today(PUBLIC_TOTAL),
+            "public_daily_limit_total": settings.api_public_daily_limit_total,
             "env_keys": len(settings.api_key_list),
             "resets_in_seconds": seconds_until_utc_midnight(),
         }
@@ -158,6 +267,7 @@ class ApiKeyStore:
             "created_at": row["created_at"],
             "last_used_at": row.get("last_used_at"),
             "revoked_at": row.get("revoked_at"),
+            "public": bool(row.get("public")),
         }
 
     def has_keys(self) -> bool:
@@ -185,12 +295,12 @@ class ApiKeyStore:
         # matching on it leaks nothing useful about other keys
         with self._lock:
             row = self._db().execute(
-                "SELECT id, name, daily_limit FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
+                "SELECT id, name, daily_limit, public FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
                 (hash_key(key),),
             ).fetchone()
         if row is None:
             return None
-        return ApiKey(id=row["id"], name=row["name"], daily_limit=row["daily_limit"])
+        return ApiKey(id=row["id"], name=row["name"], daily_limit=row["daily_limit"], public=bool(row["public"]))
 
     # Usage
 
@@ -210,8 +320,8 @@ class ApiKeyStore:
             try:
                 used = dict(
                     db.execute(
-                        "SELECT key_id, images FROM usage WHERE day = ? AND key_id IN (?, ?)",
-                        (day, api_key.id, TOTAL),
+                        "SELECT key_id, images FROM usage WHERE day = ? AND key_id IN (?, ?, ?)",
+                        (day, api_key.id, TOTAL, PUBLIC_TOTAL),
                     ).fetchall()
                 )
                 if used.get(api_key.id, 0) + images > api_key.daily_limit:
@@ -219,12 +329,18 @@ class ApiKeyStore:
                         f"Daily limit reached for this key ({api_key.daily_limit} images per day, resets at 00:00 UTC)",
                         seconds_until_utc_midnight(),
                     )
+                if api_key.public and used.get(PUBLIC_TOTAL, 0) + images > settings.api_public_daily_limit_total:
+                    raise QuotaExceeded(
+                        "Free keys have used up today's shared allowance; try again after 00:00 UTC",
+                        seconds_until_utc_midnight(),
+                    )
                 if used.get(TOTAL, 0) + images > settings.api_daily_limit_total:
                     raise QuotaExceeded(
                         "The API has reached its daily limit for all keys; try again after 00:00 UTC",
                         seconds_until_utc_midnight(),
                     )
-                for key_id in (api_key.id, TOTAL):
+                buckets = (api_key.id, TOTAL, PUBLIC_TOTAL) if api_key.public else (api_key.id, TOTAL)
+                for key_id in buckets:
                     db.execute(
                         "INSERT INTO usage (key_id, day, images) VALUES (?, ?, ?)"
                         " ON CONFLICT (key_id, day) DO UPDATE SET images = images + excluded.images",
@@ -236,6 +352,13 @@ class ApiKeyStore:
             except BaseException:
                 db.execute("ROLLBACK")
                 raise
+
+
+def rate_limit_for(api_key: ApiKey) -> int:
+    """Job submissions a key may make per minute"""
+    if api_key.public:
+        return settings.api_public_rate_limit_per_minute
+    return settings.api_rate_limit_per_minute
 
 
 api_key_store = ApiKeyStore()

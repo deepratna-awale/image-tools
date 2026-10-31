@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from config.settings import settings
-from core.api_keys import QuotaExceeded, api_key_store
+from core.api_keys import QuotaExceeded, api_key_store, rate_limit_for
 
 logger = logging.getLogger(__name__)
 
@@ -72,13 +72,13 @@ class PublicAPIMiddleware(BaseHTTPMiddleware):
 
         api_key = api_key_store.authenticate(_request_key(request))
         if api_key is None:
-            if not api_key_store.has_keys():
+            if not settings.api_public_signup and not api_key_store.has_keys():
                 return _error(403, "The public API is not enabled on this server")
             return _error(401, "Missing or invalid API key", {"WWW-Authenticate": "Bearer"})
         request.state.api_key = api_key
 
         if request.method == "POST":
-            bucket, limit = "submit", settings.api_rate_limit_per_minute
+            bucket, limit = "submit", rate_limit_for(api_key)
         else:
             bucket, limit = "poll", settings.api_poll_limit_per_minute
         retry_after = rate_limiter.check(f"{bucket}:{api_key.id}", limit)
