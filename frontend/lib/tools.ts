@@ -93,11 +93,10 @@ export const TOOLS: Tool[] = [
   {
     href: "/outpainting",
     name: "Outpainting",
-    description: "Extend a photo beyond its edges.",
+    description: "Zoom out or change the shape of a photo; AI paints in what lies beyond its edges.",
     image: "/tiles/outpainting.webp",
     icon: Expand,
     category: "ai",
-    comingSoon: true,
   },
   {
     href: "/resize-convert",

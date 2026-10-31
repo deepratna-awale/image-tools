@@ -27,7 +27,7 @@
 | [Sky Swap](https://imagetools.top/sky-swap) | Replace a dull sky with a sunset, golden hour or a sky of your own. |
 | [Image Upscaler](https://imagetools.top/upscaler) | Enlarge up to 4× (any factor, like 1.5×) or to an exact size, cropping to fit. Detects anime/art vs. photos and uses the matching Real-ESRGAN model. |
 | [Watermark Remover](https://imagetools.top/watermark-remover) | Florence-2 finds watermarks, logos and text, and FLUX.1 Kontext edits them out. Fix the marked area with a brush first if you like. |
-| Outpainting | Extend a photo beyond its edges. *Coming soon.* |
+| [Outpainting](https://imagetools.top/outpainting) | Zoom out or reshape a photo (16:9, square, portrait...) and FLUX.1 Kontext paints in what lies beyond its edges, optionally guided by a description. The original pixels are kept as they are. |
 
 ### Edit & Convert
 
@@ -50,7 +50,7 @@ Resize/convert, remove metadata, watermark and images to PDF run entirely in you
 
 ## Developer API
 
-Other apps can call background removal, the upscaler and the watermark remover on the live site with an API key. Anyone can create a free key at [imagetools.top/api-keys](https://imagetools.top/api-keys); free keys have per-minute and daily limits.
+Other apps can call background removal, the upscaler, the watermark remover and outpainting on the live site with an API key. Anyone can create a free key at [imagetools.top/api-keys](https://imagetools.top/api-keys); free keys have per-minute and daily limits.
 
 ```bash
 KEY=your-api-key
@@ -191,10 +191,10 @@ Browser-only tools skip steps 1 and 2.
 - [x] Browser-only edit and privacy tools
 - [x] Prompt Reader and AI Shield
 - [x] Public API with self-serve keys
-- [ ] Outpainting
+- [x] Outpainting
 - [ ] Shared job state (Redis) so the API and worker can scale out
 - [ ] More tools: face blur, colorizer, OCR
 
 ## License
 
-[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial, the background-removal model (BRIA RMBG 2.0) is CC BY-NC 4.0, the watermark remover's FLUX.1 Kontext [dev] is under the FLUX.1 [dev] non-commercial license (`WATERMARK_FILL_MODEL=sdxl` switches to SDXL Inpainting, which allows commercial use), and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).
+[MIT](./LICENSE). Some models and libraries the site uses have their own licenses: the Sky Swap model (SegFormer) is NVIDIA non-commercial, the background-removal model (BRIA RMBG 2.0) is CC BY-NC 4.0, the watermark remover's and outpainting's FLUX.1 Kontext [dev] is under the FLUX.1 [dev] non-commercial license (`WATERMARK_FILL_MODEL=sdxl` switches to SDXL Inpainting, which allows commercial use), and libheif is LGPL; see [imagetools.top/terms](https://imagetools.top/terms). The site's [privacy policy](https://imagetools.top/privacy) covers what happens to uploads (deleted within 24 hours by default, `FILE_RETENTION_HOURS`).

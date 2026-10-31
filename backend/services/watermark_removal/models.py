@@ -203,14 +203,21 @@ def get_finder() -> WatermarkFinder:
         return _models["finder"]
 
 
+def get_kontext() -> KontextFiller:
+    """FLUX.1 Kontext, loaded once per process (outpainting builds on it too)"""
+    with _lock:
+        if "kontext" not in _models:
+            logger.info("Loading FLUX.1 Kontext")
+            _models["kontext"] = KontextFiller(settings.watermark_flux_path)
+        return _models["kontext"]
+
+
 def get_filler() -> Filler:
     """Load the configured inpainting model once per process"""
+    if settings.watermark_fill_model != "sdxl":
+        return get_kontext()
     with _lock:
         if "filler" not in _models:
-            name = settings.watermark_fill_model
-            logger.info(f"Loading the {name} inpainting model")
-            if name == "sdxl":
-                _models["filler"] = SdxlFiller(settings.watermark_sdxl_path)
-            else:
-                _models["filler"] = KontextFiller(settings.watermark_flux_path)
+            logger.info("Loading the sdxl inpainting model")
+            _models["filler"] = SdxlFiller(settings.watermark_sdxl_path)
         return _models["filler"]

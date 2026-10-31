@@ -19,6 +19,7 @@ from services.metadata_reading.router import router as metadata_reading_router
 from services.ai_shield.router import router as ai_shield_router
 from services.upscaling.router import router as upscaling_router
 from services.watermark_removal.router import router as watermark_removal_router
+from services.outpainting.router import router as outpainting_router
 
 # Configure logging
 logging.basicConfig(
@@ -50,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="AI-powered image processing API with background removal, background changing, sky replacement, Stable Diffusion metadata reading, AI Shield, upscaling and watermark removal",
+    description="AI-powered image processing API with background removal, background changing, sky replacement, Stable Diffusion metadata reading, AI Shield, upscaling, watermark removal and outpainting",
     lifespan=lifespan
 )
 
@@ -107,6 +108,7 @@ async def root():
                 "ai_shield",
                 "upscaling",
                 "watermark_removal",
+                "outpainting",
             ],
             "docs": "/docs",
             "health": "/health"
@@ -122,11 +124,9 @@ app.include_router(metadata_reading_router, prefix=settings.api_prefix)
 app.include_router(ai_shield_router, prefix=settings.api_prefix)
 app.include_router(upscaling_router, prefix=settings.api_prefix)
 app.include_router(watermark_removal_router, prefix=settings.api_prefix)
+app.include_router(outpainting_router, prefix=settings.api_prefix)
 app.include_router(api_keys_router, prefix=settings.api_prefix)
 app.include_router(public_api_keys_router, prefix=settings.api_prefix)
-
-# TODO: outpainting is shown as "coming soon" in the frontend
-# app.include_router(outpainting_router, prefix=settings.api_prefix)
 
 
 # Global exception handler
