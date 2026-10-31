@@ -31,8 +31,8 @@ export interface Tool {
 
 /** Home page sections and menu groups, in display order. Empty ones are hidden. */
 export const CATEGORIES: { id: ToolCategory; name: string; description: string }[] = [
-  { id: "ai", name: "Backgrounds & AI", description: "Cut out, replace or restyle what's behind your subject." },
   { id: "edit", name: "Edit & Convert", description: "Resize, convert and prepare images for wherever they're going." },
+  { id: "ai", name: "Backgrounds & AI", description: "Cut out, replace or restyle what's behind your subject." },
   {
     id: "privacy",
     name: "Privacy & Metadata",
