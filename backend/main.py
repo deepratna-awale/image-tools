@@ -9,6 +9,7 @@ import uvicorn
 from config.settings import settings
 from core.public_api import PublicAPIMiddleware
 from core import retention
+from core.api_keys_router import public_router as public_api_keys_router
 from core.api_keys_router import router as api_keys_router
 from core.models.responses import HealthCheckResponse, APIResponse
 from services.background_removal.router import router as background_removal_router
@@ -122,6 +123,7 @@ app.include_router(ai_shield_router, prefix=settings.api_prefix)
 app.include_router(upscaling_router, prefix=settings.api_prefix)
 app.include_router(watermark_removal_router, prefix=settings.api_prefix)
 app.include_router(api_keys_router, prefix=settings.api_prefix)
+app.include_router(public_api_keys_router, prefix=settings.api_prefix)
 
 # TODO: outpainting is shown as "coming soon" in the frontend
 # app.include_router(outpainting_router, prefix=settings.api_prefix)

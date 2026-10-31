@@ -50,7 +50,7 @@ Resize/convert, remove metadata, watermark and images to PDF run entirely in you
 
 ## Developer API
 
-Other apps can call background removal, the upscaler and the watermark remover on the live site with an API key. Keys are self-serve from [imagetools.top/api-keys](https://imagetools.top/api-keys), each with per-minute and daily limits.
+Other apps can call background removal, the upscaler and the watermark remover on the live site with an API key. Anyone can create a free key at [imagetools.top/api-keys](https://imagetools.top/api-keys); free keys have per-minute and daily limits.
 
 ```bash
 KEY=your-api-key

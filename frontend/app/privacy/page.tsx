@@ -52,15 +52,17 @@ export default function PrivacyPage() {
       <h2>Cookies and analytics</h2>
       <p>
         The site uses no analytics, advertising or tracking cookies. Your browser stores your light or dark theme
-        choice locally. On the admin-only API keys page, the admin token is kept in your browser&apos;s session storage
-        until you close the tab.
+        choice locally. If you unlock the admin view of the API keys page, the admin token is kept in your browser&apos;s
+        session storage until you close the tab.
       </p>
 
       <h2>API keys</h2>
       <p>
-        If you are given an API key, the server stores only a one-way hash of it (never the key itself), its name, its
-        daily limit, when it was created and last used, and how many images it processed each day. Images sent through
-        the API are handled and deleted the same way as images from the site.
+        For each API key, the server stores only a one-way hash of it (never the key itself), its name, its daily
+        limit, when it was created and last used, and how many images it processed each day. For keys created on the
+        API keys page it also stores a salted one-way hash of the network address that created it, used only to limit
+        how many keys one address can create. Images sent through the API are handled and deleted the same way as
+        images from the site.
       </p>
 
       <h2>Hosting</h2>

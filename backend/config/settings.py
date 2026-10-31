@@ -164,6 +164,17 @@ class Settings(BaseSettings):
     api_max_keys: int = 20
     # Unlocks the /api-keys page for creating and revoking keys. Empty disables it.
     admin_token: str = ""
+    # Self-serve keys anyone can create on /api-keys. They get tighter limits than
+    # admin keys, share their own daily pool inside the all-keys total, and each
+    # network address may only create a few a day.
+    api_public_signup: bool = True
+    api_public_daily_limit_per_key: int = 50
+    api_public_daily_limit_total: int = 300
+    api_public_rate_limit_per_minute: int = 5
+    api_public_keys_per_ip_per_day: int = 3
+    api_public_active_keys_per_ip: int = 5
+    api_public_signups_per_day: int = 100
+    api_public_max_keys: int = 2000
 
     # CORS: browser origins allowed to call the API directly, JSON or comma-separated.
     # The site's own frontend calls the API server-side, so it needs no entry here.
