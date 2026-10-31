@@ -31,6 +31,9 @@ export function Footer() {
       </div>
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-border/60 py-4 text-xs text-muted-foreground">
         <span>© {new Date().getFullYear()} Image Tools</span>
+        <Link href="/api-keys" className="transition-colors hover:text-foreground">
+          API
+        </Link>
         <Link href="/privacy" className="transition-colors hover:text-foreground">
           Privacy
         </Link>

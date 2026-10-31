@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, WandSparkles } from "lucide-react";
+import { ChevronDown, Image as ImageIcon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ export function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
       <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-fuchsia-500 text-primary-foreground shadow-md shadow-primary/30">
-        <WandSparkles className="size-4" />
+        <ImageIcon className="size-4" />
       </span>
       Image Tools
     </Link>
