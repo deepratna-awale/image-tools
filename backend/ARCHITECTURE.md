@@ -2,9 +2,9 @@
 
 ## Current Features
 - ✅ Background Removal with batch processing (up to 10 images)
-- 🔄 Background Changing (planned)
-- 🔄 Sky Replacement (planned)
-- 🔄 Outpainting (planned)
+- ✅ Background Changing
+- ✅ Sky Replacement
+- ✅ Outpainting (GPU only)
 
 ## Architecture Overview
 
@@ -134,7 +134,6 @@ backend/
 - AWS deployment templates
 
 ### 🔄 In Progress
-- Additional AI services (background changing, sky replacement, outpainting)
 - Enhanced error handling and monitoring
 - Performance optimizations
 

@@ -6,9 +6,9 @@ A scalable, queue-based image processing API built with FastAPI, designed for AW
 
 - ✅ **Background Removal** - Remove backgrounds from images using AI (queue-based processing)
 - ✅ **Batch Processing** - Process up to 10 images simultaneously
-- 🔄 **Background Changing** - Replace image backgrounds (coming soon)
-- 🔄 **Sky Replacement** - Replace skies in landscape images (coming soon)
-- 🔄 **Outpainting** - Extend images beyond their borders (coming soon)
+- ✅ **Background Changing** - Replace image backgrounds
+- ✅ **Sky Replacement** - Replace skies in landscape images
+- ✅ **Outpainting** - Extend images beyond their borders (GPU only)
 
 ## Architecture
 
