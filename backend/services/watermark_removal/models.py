@@ -129,6 +129,14 @@ class KontextFiller(Filler):
             path, transformer=transformer, text_encoder_2=text_encoder_2, torch_dtype=torch.bfloat16
         )
         self.pipe.to("cuda")
+        # The VAE and CLIP encoder have been seen to come up in float32 next to the
+        # quantized parts, which breaks on bfloat16 inputs; pin them to bfloat16
+        for module in (self.pipe.vae, self.pipe.text_encoder):
+            module.to(dtype=torch.bfloat16)
+        logger.info(
+            "Kontext component dtypes: "
+            + ", ".join(f"{name}={module.dtype}" for name, module in self.pipe.components.items() if hasattr(module, "dtype"))
+        )
 
     @torch.inference_mode()
     def fill(self, image: Image.Image, mask: Image.Image) -> Image.Image:
