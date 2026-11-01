@@ -61,3 +61,18 @@ idle timeout. `GPU_MONTHLY_BUDGET_USD=0` removes the cap.
   while a worker starts and loads the models); later jobs are quick until it scales back to zero.
 - Requests to RunPod carry the image base64-encoded, so very large uploads can exceed the
   request limit; those jobs fall back to the CPU.
+- The Watermark Remover and Outpainting run FLUX.1 Kontext and have no CPU fallback: when
+  the GPU is unavailable or over budget, their jobs fail with a "busy, try again" message.
+  Outpainting takes 1 to 4 minutes per job (big extensions are painted in a few passes).
+- If the endpoint's workers sit at **throttled** for a long time, RunPod has no free GPU of
+  the chosen type on their host. Allowing more GPU types (same 24 GB class) in the endpoint
+  settings, or deleting the throttled workers so new ones start elsewhere, gets jobs moving.
+
+## Releasing a new GPU image
+
+The endpoint is pinned to a commit tag. To test GPU changes from a branch before merging,
+run the GPU image workflow on that branch (**Actions → GPU image → Run workflow**, about
+30 minutes), then in the RunPod console open the endpoint, **Manage → New release**, set
+the image to `ghcr.io/deepratna-awale/image-tools-gpu:<commit sha>` and **Deploy new
+release**. Workers roll over as they go idle; until then an old worker can still take
+jobs, so check the **Workers** tab shows the new version before testing.
