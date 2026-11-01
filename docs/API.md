@@ -1,8 +1,9 @@
 # Background Removal API
 
 Other apps can remove image backgrounds through the same service the site uses, and
-enlarge images with the upscaler ([Upscaling](#upscaling)) and remove watermarks
-([Watermark removal](#watermark-removal)).
+enlarge images with the upscaler ([Upscaling](#upscaling)), remove watermarks
+([Watermark removal](#watermark-removal)) and extend photos past their edges
+([Outpainting](#outpainting)).
 
 - **Base URL:** `https://imagetools.top/api/v1/background-removal`
 - **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`).
@@ -200,6 +201,40 @@ curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o clean.png
 
 Only remove watermarks from images you own or have permission to edit.
 
+## Outpainting
+
+**`https://imagetools.top/api/v1/outpainting`** takes the same keys, limits and job flow.
+It makes the canvas bigger and an AI image editor (FLUX.1 Kontext) paints in what lies
+beyond the photo's edges; the original pixels are kept as they are. The result is a PNG.
+It runs on a GPU; the first job after a quiet spell waits a minute or two for it to start,
+and each job takes one to five minutes. Bigger extensions are painted in a few passes,
+widening then heightening, so the new area continues the scene instead of repeating it.
+Text and people the model adds on busy scenes can look garbled.
+
+Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`. Send a
+shape and/or zoom, or the pixels to add to each side:
+
+| Field | What it does |
+| --- | --- |
+| `aspect_ratio` | The new shape, like `16:9`, `1:1` or `9:16` (between 1:4 and 4:1). The canvas is the smallest of that shape that holds the photo, with the photo in the middle. |
+| `zoom` | Zoom out by this much (1 to 1.5) around the middle, on its own or on top of `aspect_ratio`. |
+| `left`, `top`, `right`, `bottom` | Pixels to add on each side instead, to place the photo off-centre. |
+| `prompt` | Optional, up to 300 characters: what to put in the new area ("a sandy beach", "more forest"). Without it the scene is continued. |
+
+The canvas can be at most 3× the photo's width and height, and 16.7 megapixels.
+
+```bash
+API=https://imagetools.top/api/v1/outpainting
+
+# Widen a photo to 16:9
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" -F "aspect_ratio=16:9" $API/process | jq -r .job_id)
+# or add 400 px of sky above it
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" -F "top=400" -F "prompt=blue sky" $API/process | jq -r .job_id)
+
+until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 2; done
+curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o extended.png
+```
+
 ## Calling from a browser
 
 Keep the key on your server where you can: call the API from your backend (or a
@@ -268,7 +303,7 @@ API_PUBLIC_MAX_KEYS=2000
 
 Then restart: `sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build`.
 
-How it fits together: Caddy sends `/api/v1/background-removal/*`, `/api/v1/upscaling/*` and `/api/v1/watermark-removal/*` straight to the
+How it fits together: Caddy sends `/api/v1/background-removal/*`, `/api/v1/upscaling/*`, `/api/v1/watermark-removal/*` and `/api/v1/outpainting/*` straight to the
 API container and marks those requests as public; the API checks the key and the
 rate limit only for marked requests. The site's own pages reach the API over the
 internal Docker network, so they keep working with or without keys. The API port

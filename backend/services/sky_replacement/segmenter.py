@@ -8,6 +8,7 @@ import numpy as np
 import onnxruntime as ort
 
 from config.settings import settings
+from core.onnx_gpu import ShrinkingSession, providers
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +42,7 @@ class SkySegmenter:
         with self._lock:
             if self._session is None:
                 # CUDA on the GPU endpoint, CPU everywhere else
-                providers = [
-                    p for p in ("CUDAExecutionProvider", "CPUExecutionProvider")
-                    if p in ort.get_available_providers()
-                ]
-                self._session = ort.InferenceSession(ensure_model(), providers=providers)
+                self._session = ShrinkingSession(ort.InferenceSession(ensure_model(), providers=providers()))
         return self._session
 
     def sky_probability(self, image: np.ndarray) -> np.ndarray:

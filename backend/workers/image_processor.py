@@ -16,6 +16,7 @@ from services.sky_replacement.service import SkyReplacementService
 from services.ai_shield.service import AIShieldService
 from services.upscaling.service import UpscalingService
 from services.watermark_removal.service import WatermarkRemovalService
+from services.outpainting.service import OutpaintingService
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class ImageProcessorWorker:
             ServiceType.AI_SHIELD: AIShieldService(),
             ServiceType.UPSCALING: UpscalingService(),
             ServiceType.WATERMARK_REMOVAL: WatermarkRemovalService(),
-            # ServiceType.OUTPAINTING: OutpaintingService(),
+            ServiceType.OUTPAINTING: OutpaintingService(),
         }
 
         # Model work goes to the GPU endpoint when one is configured

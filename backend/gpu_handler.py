@@ -12,6 +12,7 @@ from core.models.job import ServiceType
 from services.ai_shield.processor import AIShieldProcessor
 from services.background_changing.processor import BackgroundChangingProcessor
 from services.background_removal.processor import BackgroundRemovalProcessor
+from services.outpainting.processor import OutpaintingProcessor
 from services.sky_replacement.processor import SkyReplacementProcessor
 from services.upscaling.processor import UpscalingProcessor
 from services.watermark_removal.processor import WatermarkRemovalProcessor
@@ -25,6 +26,7 @@ PROCESSORS = {
     ServiceType.AI_SHIELD.value: AIShieldProcessor(),
     ServiceType.UPSCALING.value: UpscalingProcessor(),
     ServiceType.WATERMARK_REMOVAL.value: WatermarkRemovalProcessor(),
+    ServiceType.OUTPAINTING.value: OutpaintingProcessor(),
 }
 
 

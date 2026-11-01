@@ -13,7 +13,7 @@ Pillow>=10.4.0
 opencv-python-headless>=4.8.0
 
 torch>=2.4
-diffusers>=0.32
+diffusers>=0.35  # FluxKontextInpaintPipeline (outpainting)
 safetensors>=0.4
 torchvision
 spandrel>=0.4
