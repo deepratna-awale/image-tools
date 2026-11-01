@@ -227,7 +227,7 @@ export default function OutpaintingPage() {
       </Button>
       {status && isProcessing && (
         <p className="mt-3 max-w-md px-4 text-center text-sm text-muted-foreground">
-          {status} This takes a few minutes, longer when zooming out a lot or if the GPU has been idle.
+          {status} This takes a few minutes, longer for a much taller or wider shape or if the GPU has been idle.
         </p>
       )}
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}

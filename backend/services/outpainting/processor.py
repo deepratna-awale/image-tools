@@ -20,7 +20,7 @@ MAX_PROMPT_LENGTH = 300
 # How far (as a share of the work canvas's shorter side) the model also repaints inside
 # the photo's extended edges, so the new part blends in instead of meeting it at a line
 OVERLAP = 0.03
-# Most each pass grows the image per side; bigger extensions are painted in several passes
+# Most each pass grows the image; extensions in one direction past it are painted in several passes
 MAX_STAGE_GROWTH = 1.4
 
 
@@ -173,7 +173,11 @@ class OutpaintingProcessor:
 
         # Grown in steps: asked to fill a lot at once, the model redraws the whole scene
         # smaller instead of continuing it, which repeats it around the photo with hard seams
-        stages = plan_stages(width, height, canvas_w, canvas_h, x, y, tuning.pop("max_stage_growth", MAX_STAGE_GROWTH))
+        # Only when growing one way, though: painted on all sides, the passes meet in
+        # visible rectangles, and one pass reads better
+        one_way = canvas_w < width * 1.05 or canvas_h < height * 1.05
+        max_growth = tuning.pop("max_stage_growth", MAX_STAGE_GROWTH if one_way else 1.0)
+        stages = plan_stages(width, height, canvas_w, canvas_h, x, y, max_growth)
         painter = models.get_painter()
         source, source_size = rgb, (width, height)
         for number, (stage_w, stage_h, dx, dy) in enumerate(stages, 1):

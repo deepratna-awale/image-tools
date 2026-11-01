@@ -19,12 +19,12 @@ PROMPT = (
     "subjects, background, perspective, lighting, colours and style seamlessly to the "
     "new edges. No frame, border, text or watermark."
 )
-# Used when Kontext is shown the canvas itself: an edit of the smeared edges, which keeps
-# the layout where it is instead of redrawing the scene
-CANVAS_PROMPT = (
-    "Replace the smeared, stretched streaks around the edges of this picture with a natural "
-    "continuation of the scene, matching its perspective, lighting, colours, detail and style. "
-    "Keep the middle exactly as it is. No frame, border, text or watermark."
+# Used when Kontext is shown the canvas with the new area left plain white
+# (reference="padded"), so the picture stays where it is instead of being redrawn smaller
+PADDED_PROMPT = (
+    "Fill the plain white area around this picture with a seamless continuation of the "
+    "scene, matching its perspective, lighting, colours, detail and style. Keep the picture "
+    "itself unchanged. No white area, frame, border, text or watermark."
 )
 
 
@@ -67,18 +67,25 @@ class Painter:
     ) -> Image.Image:
         """Repaint what's white in `mask` on `canvas` (the photo placed on the work
         canvas, its edges stretched outwards). Kontext is shown either the photo alone
-        (`reference="photo"`, so it 'zooms out' from a clean picture) or the canvas itself."""
+        (`reference="photo"`, so it 'zooms out' from a clean picture) or the canvas with
+        the area to paint left white (`reference="padded"`)."""
         width, height = canvas.size
         if reference == "photo":
             # At about the work area too: the reference adds as many tokens as its pixels
             factor = min(1.0, (width * height / (photo.width * photo.height)) ** 0.5)
             size = [max(16, round(side * factor / 16) * 16) for side in photo.size]
             photo = photo.resize(size, Image.LANCZOS)
+        elif reference == "padded":
+            padded = np.array(canvas.convert("RGB"))
+            padded[np.asarray(mask) > 127] = 255
+            photo = Image.fromarray(padded)
+        else:
+            raise ValueError(f"Unknown reference {reference!r}")
         return self.pipe(
             image=canvas,
-            image_reference=photo if reference == "photo" else None,
+            image_reference=photo,
             mask_image=mask,
-            prompt=build_prompt(prompt, base_prompt or (PROMPT if reference == "photo" else CANVAS_PROMPT)),
+            prompt=build_prompt(prompt, base_prompt or (PROMPT if reference == "photo" else PADDED_PROMPT)),
             width=width,
             height=height,
             strength=1.0,

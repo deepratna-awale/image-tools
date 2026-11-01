@@ -196,16 +196,23 @@ def test_big_extensions_are_painted_in_stages():
     assert len(stages) == 3 and all(stage[0] == 1400 and stage[2] == 0 for stage in stages)
 
 
-def test_each_stage_paints_around_the_last(client, queue, painter):
-    job_id = submit(client, png(80, 60), {"zoom": "2"}).json()["job_id"]
+def test_long_one_way_extensions_are_painted_in_passes(client, queue, painter):
+    job_id = submit(client, png(80, 60), {"aspect_ratio": "9:16"}).json()["job_id"]
     run_worker(queue)
     pixels = result(client, job_id)
-    assert pixels.shape == (120, 160, 3)
-    assert tuple(pixels[2, 2]) == PAINT and tuple(pixels[60, 80]) == PHOTO
+    assert pixels.shape == (142, 80, 3)
+    assert tuple(pixels[2, 40]) == PAINT and tuple(pixels[71, 40]) == PHOTO
     assert len(painter.calls) == 3
     # The first pass is shown the photo, the later ones the last pass's result
     assert painter.calls[0]["photo"] == (80, 60)
     assert painter.calls[1]["photo"] != (80, 60)
+
+
+def test_growing_on_all_sides_is_one_pass(client, queue, painter):
+    job_id = submit(client, png(80, 60), {"zoom": "2"}).json()["job_id"]
+    run_worker(queue)
+    assert result(client, job_id).shape == (120, 160, 3)
+    assert len(painter.calls) == 1
 
 
 def test_without_a_gpu_the_job_fails_politely(client, queue, painter, monkeypatch):
