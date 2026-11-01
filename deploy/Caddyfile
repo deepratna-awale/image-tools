@@ -1,12 +1,12 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
-	# Public background-removal, upscaling and watermark-removal API for other apps
-	# (docs/API.md). The API checks the key and rate limit for requests carrying
+	# Public background-removal, upscaling, watermark-removal and outpainting API for
+	# other apps (docs/API.md). The API checks the key and rate limit for requests carrying
 	# X-Public-Api, which only this route sets.
 	@public_api {
-		path /api/v1/background-removal/* /api/v1/upscaling/* /api/v1/watermark-removal/*
-		not path /api/v1/background-removal/stats /api/v1/upscaling/stats /api/v1/watermark-removal/stats
+		path /api/v1/background-removal/* /api/v1/upscaling/* /api/v1/watermark-removal/* /api/v1/outpainting/*
+		not path /api/v1/background-removal/stats /api/v1/upscaling/stats /api/v1/watermark-removal/stats /api/v1/outpainting/stats
 	}
 	handle @public_api {
 		reverse_proxy api:8000 {

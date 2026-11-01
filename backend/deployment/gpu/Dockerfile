@@ -10,7 +10,8 @@ ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     U2NET_HOME=/opt/models \
     SKY_MODEL_PATH=/opt/models/segformer-b0-ade.onnx \
-    NUMBA_CACHE_DIR=/tmp/numba_cache
+    NUMBA_CACHE_DIR=/tmp/numba_cache \
+    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip libgl1 libglib2.0-0 \

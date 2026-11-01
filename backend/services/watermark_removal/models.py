@@ -99,14 +99,24 @@ class Filler:
 
 class KontextFiller(Filler):
     """FLUX.1 Kontext [dev], an instruction editor, its 12B transformer quantized to 4 bits
-    to fit a 24 GB GPU. Unlike an inpainting model it sees the watermark it is removing,
+    and its T5 text encoder to 8 bits (about 12 GB in all) to fit a 24 GB GPU next to the
+    other tools' models. Unlike an inpainting model it sees the watermark it is removing,
     so it rebuilds what was under it instead of inventing something new for the hole."""
 
     multiple = 16
 
     def __init__(self, path: str):
         from diffusers import BitsAndBytesConfig, FluxKontextPipeline, FluxTransformer2DModel
+        from transformers import BitsAndBytesConfig as TextBitsAndBytesConfig, T5EncoderModel
 
+        # Whatever the other tools left in PyTorch's cache goes back first
+        torch.cuda.empty_cache()
+        text_encoder_2 = T5EncoderModel.from_pretrained(
+            path,
+            subfolder="text_encoder_2",
+            quantization_config=TextBitsAndBytesConfig(load_in_8bit=True),
+            torch_dtype=torch.bfloat16,
+        )
         transformer = FluxTransformer2DModel.from_pretrained(
             path,
             subfolder="transformer",
@@ -115,8 +125,18 @@ class KontextFiller(Filler):
             ),
             torch_dtype=torch.bfloat16,
         )
-        self.pipe = FluxKontextPipeline.from_pretrained(path, transformer=transformer, torch_dtype=torch.bfloat16)
+        self.pipe = FluxKontextPipeline.from_pretrained(
+            path, transformer=transformer, text_encoder_2=text_encoder_2, torch_dtype=torch.bfloat16
+        )
         self.pipe.to("cuda")
+        # The VAE and CLIP encoder have been seen to come up in float32 next to the
+        # quantized parts, which breaks on bfloat16 inputs; pin them to bfloat16
+        for module in (self.pipe.vae, self.pipe.text_encoder):
+            module.to(dtype=torch.bfloat16)
+        logger.info(
+            "Kontext component dtypes: "
+            + ", ".join(f"{name}={module.dtype}" for name, module in self.pipe.components.items() if hasattr(module, "dtype"))
+        )
 
     @torch.inference_mode()
     def fill(self, image: Image.Image, mask: Image.Image) -> Image.Image:
@@ -203,14 +223,21 @@ def get_finder() -> WatermarkFinder:
         return _models["finder"]
 
 
+def get_kontext() -> KontextFiller:
+    """FLUX.1 Kontext, loaded once per process (outpainting builds on it too)"""
+    with _lock:
+        if "kontext" not in _models:
+            logger.info("Loading FLUX.1 Kontext")
+            _models["kontext"] = KontextFiller(settings.watermark_flux_path)
+        return _models["kontext"]
+
+
 def get_filler() -> Filler:
     """Load the configured inpainting model once per process"""
+    if settings.watermark_fill_model != "sdxl":
+        return get_kontext()
     with _lock:
         if "filler" not in _models:
-            name = settings.watermark_fill_model
-            logger.info(f"Loading the {name} inpainting model")
-            if name == "sdxl":
-                _models["filler"] = SdxlFiller(settings.watermark_sdxl_path)
-            else:
-                _models["filler"] = KontextFiller(settings.watermark_flux_path)
+            logger.info("Loading the sdxl inpainting model")
+            _models["filler"] = SdxlFiller(settings.watermark_sdxl_path)
         return _models["filler"]
