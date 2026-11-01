@@ -7,6 +7,7 @@ import numpy as np
 from rembg import new_session, remove
 
 from config.settings import settings
+from core.onnx_gpu import ShrinkingSession, providers
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,9 @@ logger = logging.getLogger(__name__)
 @lru_cache(maxsize=None)
 def get_rembg_session(model_name: str):
     """One model session per process, shared by every tool that needs a cutout"""
-    return new_session(model_name)
+    session = new_session(model_name, providers=providers())
+    session.inner_session = ShrinkingSession(session.inner_session)
+    return session
 
 
 class BackgroundRemovalProcessor:

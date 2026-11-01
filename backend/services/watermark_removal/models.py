@@ -99,14 +99,24 @@ class Filler:
 
 class KontextFiller(Filler):
     """FLUX.1 Kontext [dev], an instruction editor, its 12B transformer quantized to 4 bits
-    to fit a 24 GB GPU. Unlike an inpainting model it sees the watermark it is removing,
+    and its T5 text encoder to 8 bits (about 12 GB in all) to fit a 24 GB GPU next to the
+    other tools' models. Unlike an inpainting model it sees the watermark it is removing,
     so it rebuilds what was under it instead of inventing something new for the hole."""
 
     multiple = 16
 
     def __init__(self, path: str):
         from diffusers import BitsAndBytesConfig, FluxKontextPipeline, FluxTransformer2DModel
+        from transformers import BitsAndBytesConfig as TextBitsAndBytesConfig, T5EncoderModel
 
+        # Whatever the other tools left in PyTorch's cache goes back first
+        torch.cuda.empty_cache()
+        text_encoder_2 = T5EncoderModel.from_pretrained(
+            path,
+            subfolder="text_encoder_2",
+            quantization_config=TextBitsAndBytesConfig(load_in_8bit=True),
+            torch_dtype=torch.bfloat16,
+        )
         transformer = FluxTransformer2DModel.from_pretrained(
             path,
             subfolder="transformer",
@@ -115,7 +125,9 @@ class KontextFiller(Filler):
             ),
             torch_dtype=torch.bfloat16,
         )
-        self.pipe = FluxKontextPipeline.from_pretrained(path, transformer=transformer, torch_dtype=torch.bfloat16)
+        self.pipe = FluxKontextPipeline.from_pretrained(
+            path, transformer=transformer, text_encoder_2=text_encoder_2, torch_dtype=torch.bfloat16
+        )
         self.pipe.to("cuda")
 
     @torch.inference_mode()
