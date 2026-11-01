@@ -26,7 +26,7 @@ const SHAPES = [
   { id: "16:9", label: "16:9", ratio: 16 / 9 },
   { id: "21:9", label: "21:9", ratio: 21 / 9 },
 ];
-const ZOOMS = [1, 1.25, 1.5, 2];
+const ZOOMS = [1, 1.25, 1.5];
 // Where the photo sits on the bigger canvas: 0 = left/top, 1 = centre, 2 = right/bottom
 const ANCHORS = [0, 1, 2];
 
@@ -209,7 +209,9 @@ export default function OutpaintingPage() {
               placeholder="e.g. more beach and ocean, a cloudy sky"
               className="h-9 rounded-md border bg-background px-3 text-sm"
             />
-            <span className="text-xs text-muted-foreground">Leave it empty to simply continue the scene.</span>
+            <span className="text-xs text-muted-foreground">
+              Leave it empty to simply continue the scene. On busy scenes, new text and people can come out garbled.
+            </span>
           </label>
 
           {preview}

@@ -209,6 +209,7 @@ beyond the photo's edges; the original pixels are kept as they are. The result i
 It runs on a GPU; the first job after a quiet spell waits a minute or two for it to start,
 and each job takes one to five minutes. Bigger extensions are painted in a few passes,
 widening then heightening, so the new area continues the scene instead of repeating it.
+Text and people the model adds on busy scenes can look garbled.
 
 Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`. Send a
 shape and/or zoom, or the pixels to add to each side:
@@ -216,7 +217,7 @@ shape and/or zoom, or the pixels to add to each side:
 | Field | What it does |
 | --- | --- |
 | `aspect_ratio` | The new shape, like `16:9`, `1:1` or `9:16` (between 1:4 and 4:1). The canvas is the smallest of that shape that holds the photo, with the photo in the middle. |
-| `zoom` | Zoom out by this much (1 to 3) around the middle, on its own or on top of `aspect_ratio`. |
+| `zoom` | Zoom out by this much (1 to 1.5) around the middle, on its own or on top of `aspect_ratio`. |
 | `left`, `top`, `right`, `bottom` | Pixels to add on each side instead, to place the photo off-centre. |
 | `prompt` | Optional, up to 300 characters: what to put in the new area ("a sandy beach", "more forest"). Without it the scene is continued. |
 

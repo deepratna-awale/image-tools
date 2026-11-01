@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 # The canvas can grow to this many times the photo's width and height
 MAX_GROWTH = 3.0
+# Zooming out further makes up too much: on busy photos the new area turns to repeats
+MAX_ZOOM = 1.5
 # Widest and tallest canvas shapes the model handles well
 MAX_ASPECT = 4.0
 MAX_PROMPT_LENGTH = 300
@@ -55,8 +57,8 @@ def plan_canvas(
     if aspect_ratio or zoom:
         ratio = parse_aspect_ratio(aspect_ratio) if aspect_ratio else width / height
         zoom = 1.0 if zoom is None else zoom
-        if not 1 <= zoom <= MAX_GROWTH:
-            raise ValueError(f"Zoom must be between 1 and {MAX_GROWTH:g}")
+        if not 1 <= zoom <= MAX_ZOOM:
+            raise ValueError(f"Zoom must be between 1 and {MAX_ZOOM:g}")
         canvas_w = max(width, round(height * ratio)) * zoom
         canvas_h = max(height, round(width / ratio)) * zoom
         canvas_w, canvas_h = max(width, round(canvas_w)), max(height, round(canvas_h))

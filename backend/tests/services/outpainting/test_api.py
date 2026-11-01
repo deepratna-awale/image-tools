@@ -112,7 +112,7 @@ def test_plan_canvas_by_shape_zoom_and_sides():
     assert plan_canvas(800, 600, aspect_ratio="1:1") == (800, 800, 0, 100)
     # Zoom out keeps the shape
     assert plan_canvas(800, 600, zoom=1.5) == (1200, 900, 200, 150)
-    assert plan_canvas(800, 600, aspect_ratio="1:1", zoom=2) == (1600, 1600, 400, 500)
+    assert plan_canvas(800, 600, aspect_ratio="1:1", zoom=1.5) == (1200, 1200, 200, 300)
     # Sides place the photo where asked
     assert plan_canvas(800, 600, left=0, top=200, right=100, bottom=0) == (900, 800, 0, 200)
 
@@ -123,7 +123,7 @@ def test_plan_canvas_refusals(monkeypatch):
     with pytest.raises(ValueError, match="3x"):
         plan_canvas(800, 600, right=2000)
     with pytest.raises(ValueError, match="Zoom"):
-        plan_canvas(800, 600, zoom=5)
+        plan_canvas(800, 600, zoom=2)
     with pytest.raises(ValueError, match="negative"):
         plan_canvas(800, 600, left=-5, right=50)
     monkeypatch.setattr("config.settings.settings.outpaint_max_output_pixels", 1000)
