@@ -182,18 +182,19 @@ def test_large_canvases_are_enlarged_with_the_upscaler(client, queue, painter, m
     assert tuple(pixels[225, 300]) == PHOTO
 
 
-def test_big_extensions_are_painted_in_stages():
-    # 16:9 from 3:2 grows less than 1.4x: one pass
-    assert plan_stages(1400, 934, 1660, 934, 130, 0, 1.4) == [(1660, 934, 130, 0)]
-    # Zooming out 1.5x: two passes, the photo moving to its place in the middle
-    stages = plan_stages(1400, 934, 2100, 1401, 350, 233, 1.4)
-    assert len(stages) == 2 and stages[-1][:2] == (2100, 1401)
-    assert sum(stage[2] for stage in stages) == 350 and sum(stage[3] for stage in stages) == 233
-    for (width, height, _, _), (next_w, next_h, _, _) in zip([(1400, 934, 0, 0)] + stages, stages):
-        assert max(next_w / width, next_h / height) <= 1.4 + 1e-3
+def test_big_extensions_are_painted_in_one_way_passes():
+    # 16:9 from 3:2 grows less than 1.5x: one pass
+    assert plan_stages(1400, 934, 1660, 934, 130, 0, 1.5) == [(1660, 934, 130, 0)]
     # Taller by 2.7x: three passes, growing only the height
-    stages = plan_stages(1400, 934, 1400, 2489, 0, 777, 1.4)
+    stages = plan_stages(1400, 934, 1400, 2489, 0, 777, 1.5)
     assert len(stages) == 3 and all(stage[0] == 1400 and stage[2] == 0 for stage in stages)
+    assert sum(stage[3] for stage in stages) == 777
+    # Zooming out 1.5x: wider first, then taller, the photo ending in the middle
+    stages = plan_stages(1400, 934, 2100, 1401, 350, 233, 1.5)
+    assert stages == [(2100, 934, 350, 0), (2100, 1401, 0, 233)]
+    for (width, height, _, _), (next_w, next_h, _, _) in zip([(1400, 934, 0, 0)] + stages, stages):
+        assert max(next_w / width, next_h / height) <= 1.5 + 1e-3
+        assert next_w == width or next_h == height
 
 
 def test_long_one_way_extensions_are_painted_in_passes(client, queue, painter):
@@ -208,11 +209,17 @@ def test_long_one_way_extensions_are_painted_in_passes(client, queue, painter):
     assert painter.calls[1]["photo"] != (80, 60)
 
 
-def test_growing_on_all_sides_is_one_pass(client, queue, painter):
-    job_id = submit(client, png(80, 60), {"zoom": "2"}).json()["job_id"]
+def test_zooming_out_widens_then_heightens(client, queue, painter):
+    job_id = submit(client, png(80, 60), {"zoom": "1.5"}).json()["job_id"]
     run_worker(queue)
-    assert result(client, job_id).shape == (120, 160, 3)
-    assert len(painter.calls) == 1
+    pixels = result(client, job_id)
+    assert pixels.shape == (90, 120, 3)
+    assert tuple(pixels[2, 2]) == PAINT and tuple(pixels[45, 60]) == PHOTO
+    assert len(painter.calls) == 2
+    first, second = (call["mask"] for call in painter.calls)
+    # First only the sides are painted, then only the top and bottom
+    assert first[0, first.shape[1] // 2] == 0 and first[first.shape[0] // 2, 0] == 255
+    assert second[0, second.shape[1] // 2] == 255
 
 
 def test_without_a_gpu_the_job_fails_politely(client, queue, painter, monkeypatch):

@@ -20,8 +20,8 @@ MAX_PROMPT_LENGTH = 300
 # How far (as a share of the work canvas's shorter side) the model also repaints inside
 # the photo's extended edges, so the new part blends in instead of meeting it at a line
 OVERLAP = 0.03
-# Most each pass grows the image; extensions in one direction past it are painted in several passes
-MAX_STAGE_GROWTH = 1.4
+# Most each pass grows the image; bigger extensions are painted in several passes
+MAX_STAGE_GROWTH = 1.5
 
 
 def parse_aspect_ratio(text: str) -> float:
@@ -113,24 +113,32 @@ def photo_weight(canvas_w: int, canvas_h: int, x: int, y: int, width: int, heigh
 def plan_stages(
     width: int, height: int, canvas_w: int, canvas_h: int, x: int, y: int, max_growth: float = 1.0
 ) -> List[Tuple[int, int, int, int]]:
-    """Split growing a width x height photo at (x, y) to canvas_w x canvas_h into steps
-    that each grow the image at most `max_growth` times per side, keeping the photo's
-    place. Returns each step's (canvas_w, canvas_h, previous_x, previous_y): its size and
-    where the previous step's image sits on it."""
+    """Split growing a width x height photo at (x, y) to canvas_w x canvas_h into passes
+    that each grow the image one way (wider, then taller) by at most `max_growth` times,
+    keeping the photo's place. Returns each pass's (canvas_w, canvas_h, previous_x,
+    previous_y): its size and where the previous pass's image sits on it."""
+    if canvas_w > width and canvas_h > height:
+        return _one_way_stages(width, height, canvas_w, height, x, 0, max_growth) + _one_way_stages(
+            canvas_w, height, canvas_w, canvas_h, 0, y, max_growth
+        )
+    return _one_way_stages(width, height, canvas_w, canvas_h, x, y, max_growth)
+
+
+def _one_way_stages(width, height, canvas_w, canvas_h, x, y, max_growth):
     growth = max(canvas_w / width, canvas_h / height)
     count = max(1, math.ceil(math.log(growth) / math.log(max_growth) - 1e-9)) if max_growth > 1 else 1
     stages = []
     previous = (width, height, 0, 0)
     for step in range(1, count + 1):
-        share = (step / count) if step < count else 1.0
-        # Each side grows by the same factor per step, so the extra area is split evenly
+        share = step / count
+        # Each pass grows by the same factor, so the extra area is split evenly
         stage_w = round(width * (canvas_w / width) ** share) if step < count else canvas_w
         stage_h = round(height * (canvas_h / height) ** share) if step < count else canvas_h
-        # The photo's place on this step's canvas, moving towards its final place
+        # The photo's place on this pass's canvas, moving towards its final place
         grow_w, grow_h = canvas_w - width, canvas_h - height
         stage_x = round(x * (stage_w - width) / grow_w) if grow_w else 0
         stage_y = round(y * (stage_h - height) / grow_h) if grow_h else 0
-        # Where the previous step's image sits on this one
+        # Where the previous pass's image sits on this one
         stages.append((stage_w, stage_h, stage_x - previous[2], stage_y - previous[3]))
         previous = (stage_w, stage_h, stage_x, stage_y)
     return stages
@@ -171,13 +179,10 @@ class OutpaintingProcessor:
         canvas_w, canvas_h, x, y = plan_canvas(width, height, *sides, aspect_ratio=aspect_ratio, zoom=zoom)
         rgb = np.asarray(image.convert("RGB"))
 
-        # Grown in steps: asked to fill a lot at once, the model redraws the whole scene
-        # smaller instead of continuing it, which repeats it around the photo with hard seams
-        # Only when growing one way, though: painted on all sides, the passes meet in
-        # visible rectangles, and one pass reads better
-        one_way = canvas_w < width * 1.05 or canvas_h < height * 1.05
-        max_growth = tuning.pop("max_stage_growth", MAX_STAGE_GROWTH if one_way else 1.0)
-        stages = plan_stages(width, height, canvas_w, canvas_h, x, y, max_growth)
+        # Grown in passes, each one way: asked to fill a lot at once or all around, the
+        # model redraws the whole scene smaller instead of continuing it, which repeats it
+        # around the photo with hard seams. Widening or heightening alone continues it well.
+        stages = plan_stages(width, height, canvas_w, canvas_h, x, y, tuning.pop("max_stage_growth", MAX_STAGE_GROWTH))
         painter = models.get_painter()
         source, source_size = rgb, (width, height)
         for number, (stage_w, stage_h, dx, dy) in enumerate(stages, 1):
