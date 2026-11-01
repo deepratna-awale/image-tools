@@ -38,7 +38,12 @@ class Painter:
 
         from services.watermark_removal.models import get_kontext
 
-        self.pipe = FluxKontextInpaintPipeline.from_pipe(get_kontext().pipe)
+        # Built straight from the loaded components: from_pipe would also cast every
+        # module it can to float32, doubling the text encoders in GPU memory. The scheduler
+        # keeps per-run state, so this pipeline gets its own.
+        components = dict(get_kontext().pipe.components)
+        components["scheduler"] = components["scheduler"].__class__.from_config(components["scheduler"].config)
+        self.pipe = FluxKontextInpaintPipeline(**components)
 
     @torch.inference_mode()
     def paint(
