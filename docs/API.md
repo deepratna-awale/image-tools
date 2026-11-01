@@ -209,7 +209,10 @@ beyond the photo's edges; the original pixels are kept as they are. The result i
 It runs on a GPU; the first job after a quiet spell waits a minute or two for it to start,
 and each job takes one to five minutes. Bigger extensions are painted in a few passes,
 widening then heightening, so the new area continues the scene instead of repeating it.
-Text and people the model adds on busy scenes can look garbled.
+Text and people the model adds on busy scenes can look garbled. It needs the GPU: when
+the GPU can't take the job (or the month's GPU budget is used up), the job fails with
+`Outpainting is busy right now; please try again in a few minutes` instead of running on
+the CPU.
 
 Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`. Send a
 shape and/or zoom, or the pixels to add to each side:
