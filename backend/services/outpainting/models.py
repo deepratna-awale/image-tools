@@ -19,6 +19,13 @@ PROMPT = (
     "subjects, background, perspective, lighting, colours and style seamlessly to the "
     "new edges. No frame, border, text or watermark."
 )
+# Used when Kontext is shown the canvas itself: an edit of the smeared edges, which keeps
+# the layout where it is instead of redrawing the scene
+CANVAS_PROMPT = (
+    "Replace the smeared, stretched streaks around the edges of this picture with a natural "
+    "continuation of the scene, matching its perspective, lighting, colours, detail and style. "
+    "Keep the middle exactly as it is. No frame, border, text or watermark."
+)
 
 
 def on_gpu() -> bool:
@@ -53,7 +60,7 @@ class Painter:
         mask: Image.Image,
         prompt: str = "",
         reference: str = "photo",
-        base_prompt: str = PROMPT,
+        base_prompt: str = "",
         steps: int = 0,
         guidance: float = 2.5,
         seed: int = 0,
@@ -71,7 +78,7 @@ class Painter:
             image=canvas,
             image_reference=photo if reference == "photo" else None,
             mask_image=mask,
-            prompt=build_prompt(prompt, base_prompt),
+            prompt=build_prompt(prompt, base_prompt or (PROMPT if reference == "photo" else CANVAS_PROMPT)),
             width=width,
             height=height,
             strength=1.0,

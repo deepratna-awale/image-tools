@@ -1,7 +1,8 @@
 import asyncio
 import io
 import logging
-from typing import Optional, Tuple
+import math
+from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -19,6 +20,8 @@ MAX_PROMPT_LENGTH = 300
 # How far (as a share of the work canvas's shorter side) the model also repaints inside
 # the photo's extended edges, so the new part blends in instead of meeting it at a line
 OVERLAP = 0.03
+# Most each pass grows the image per side; bigger extensions are painted in several passes
+MAX_STAGE_GROWTH = 1.4
 
 
 def parse_aspect_ratio(text: str) -> float:
@@ -107,6 +110,32 @@ def photo_weight(canvas_w: int, canvas_h: int, x: int, y: int, width: int, heigh
     return weight
 
 
+def plan_stages(
+    width: int, height: int, canvas_w: int, canvas_h: int, x: int, y: int, max_growth: float = 1.0
+) -> List[Tuple[int, int, int, int]]:
+    """Split growing a width x height photo at (x, y) to canvas_w x canvas_h into steps
+    that each grow the image at most `max_growth` times per side, keeping the photo's
+    place. Returns each step's (canvas_w, canvas_h, previous_x, previous_y): its size and
+    where the previous step's image sits on it."""
+    growth = max(canvas_w / width, canvas_h / height)
+    count = max(1, math.ceil(math.log(growth) / math.log(max_growth) - 1e-9)) if max_growth > 1 else 1
+    stages = []
+    previous = (width, height, 0, 0)
+    for step in range(1, count + 1):
+        share = (step / count) if step < count else 1.0
+        # Each side grows by the same factor per step, so the extra area is split evenly
+        stage_w = round(width * (canvas_w / width) ** share) if step < count else canvas_w
+        stage_h = round(height * (canvas_h / height) ** share) if step < count else canvas_h
+        # The photo's place on this step's canvas, moving towards its final place
+        grow_w, grow_h = canvas_w - width, canvas_h - height
+        stage_x = round(x * (stage_w - width) / grow_w) if grow_w else 0
+        stage_y = round(y * (stage_h - height) / grow_h) if grow_h else 0
+        # Where the previous step's image sits on this one
+        stages.append((stage_w, stage_h, stage_x - previous[2], stage_y - previous[3]))
+        previous = (stage_w, stage_h, stage_x, stage_y)
+    return stages
+
+
 class OutpaintingProcessor:
     """Extends a photo past its edges: FLUX.1 Kontext paints the new area around it at
     about a megapixel, Real-ESRGAN brings that up to the photo's resolution, and the
@@ -142,36 +171,18 @@ class OutpaintingProcessor:
         canvas_w, canvas_h, x, y = plan_canvas(width, height, *sides, aspect_ratio=aspect_ratio, zoom=zoom)
         rgb = np.asarray(image.convert("RGB"))
 
-        # The photo on the work canvas, and the mask of what the model paints: everything
-        # around it plus a thin band inside each extended edge
-        work_w, work_h = work_size(canvas_w, canvas_h)
-        # Rounding to multiples of 16 can stretch the shape a touch, so each axis scales on its own
-        scale_x, scale_y = work_w / canvas_w, work_h / canvas_h
-        box = (
-            round(x * scale_x),
-            round(y * scale_y),
-            min(work_w, max(round((x + width) * scale_x), round(x * scale_x) + 1)),
-            min(work_h, max(round((y + height) * scale_y), round(y * scale_y) + 1)),
-        )
-        band = max(1, round(OVERLAP * min(work_w, work_h)))
-        work_photo = cv2.resize(rgb, (box[2] - box[0], box[3] - box[1]), interpolation=cv2.INTER_AREA)
-        canvas = cv2.copyMakeBorder(
-            work_photo, box[1], work_h - box[3], box[0], work_w - box[2], cv2.BORDER_REPLICATE
-        )
-        mask = np.full((work_h, work_w), 255, np.uint8)
-        keep = [
-            box[0] + (band if box[0] > 0 else 0),
-            box[1] + (band if box[1] > 0 else 0),
-            box[2] - (band if box[2] < work_w else 0),
-            box[3] - (band if box[3] < work_h else 0),
-        ]
-        mask[keep[1]:keep[3], keep[0]:keep[2]] = 0
-
-        painted = models.get_painter().paint(
-            Image.fromarray(rgb), Image.fromarray(canvas), Image.fromarray(mask), prompt.strip(), **tuning
-        )
-        painted = np.asarray(painted.convert("RGB").resize((work_w, work_h), Image.LANCZOS))
-        logger.info(f"Painted a {canvas_w}x{canvas_h} canvas at {work_w}x{work_h}")
+        # Grown in steps: asked to fill a lot at once, the model redraws the whole scene
+        # smaller instead of continuing it, which repeats it around the photo with hard seams
+        stages = plan_stages(width, height, canvas_w, canvas_h, x, y, tuning.pop("max_stage_growth", MAX_STAGE_GROWTH))
+        painter = models.get_painter()
+        source, source_size = rgb, (width, height)
+        for number, (stage_w, stage_h, dx, dy) in enumerate(stages, 1):
+            painted, band, (scale_x, scale_y) = self._paint_stage(
+                painter, source, source_size, stage_w, stage_h, dx, dy, prompt.strip(), tuning
+            )
+            source, source_size = painted, (stage_w, stage_h)
+            logger.info(f"Painted stage {number}/{len(stages)}: {stage_w}x{stage_h} at {painted.shape[1]}x{painted.shape[0]}")
+        work_w = painted.shape[1]
 
         # Bring the painted canvas up to full size; Real-ESRGAN rather than plain
         # resizing when it has to grow much, so the new area isn't blurrier than the photo
@@ -195,3 +206,38 @@ class OutpaintingProcessor:
         buffer = io.BytesIO()
         result.save(buffer, format="PNG", icc_profile=icc_profile)
         return buffer.getvalue()
+
+    @staticmethod
+    def _paint_stage(painter, source: np.ndarray, source_size, canvas_w: int, canvas_h: int, x: int, y: int, prompt: str, tuning: dict):
+        """One pass: `source` (showing source_size pixels of the final image's scale) placed
+        at (x, y) on a canvas_w x canvas_h canvas, the rest painted at the work size.
+        Returns the painted work image, the repainted band's width and the work scale."""
+        width, height = source_size
+        # The photo on the work canvas, and the mask of what the model paints: everything
+        # around it plus a thin band inside each extended edge
+        work_w, work_h = work_size(canvas_w, canvas_h)
+        # Rounding to multiples of 16 can stretch the shape a touch, so each axis scales on its own
+        scale_x, scale_y = work_w / canvas_w, work_h / canvas_h
+        box = (
+            round(x * scale_x),
+            round(y * scale_y),
+            min(work_w, max(round((x + width) * scale_x), round(x * scale_x) + 1)),
+            min(work_h, max(round((y + height) * scale_y), round(y * scale_y) + 1)),
+        )
+        band = max(1, round(OVERLAP * min(work_w, work_h)))
+        work_photo = cv2.resize(source, (box[2] - box[0], box[3] - box[1]), interpolation=cv2.INTER_AREA)
+        canvas = cv2.copyMakeBorder(
+            work_photo, box[1], work_h - box[3], box[0], work_w - box[2], cv2.BORDER_REPLICATE
+        )
+        mask = np.full((work_h, work_w), 255, np.uint8)
+        keep = [
+            box[0] + (band if box[0] > 0 else 0),
+            box[1] + (band if box[1] > 0 else 0),
+            box[2] - (band if box[2] < work_w else 0),
+            box[3] - (band if box[3] < work_h else 0),
+        ]
+        mask[keep[1]:keep[3], keep[0]:keep[2]] = 0
+
+        painted = painter.paint(Image.fromarray(source), Image.fromarray(canvas), Image.fromarray(mask), prompt, **tuning)
+        painted = np.asarray(painted.convert("RGB").resize((work_w, work_h), Image.LANCZOS))
+        return painted, band, (scale_x, scale_y)

@@ -207,7 +207,8 @@ Only remove watermarks from images you own or have permission to edit.
 It makes the canvas bigger and an AI image editor (FLUX.1 Kontext) paints in what lies
 beyond the photo's edges; the original pixels are kept as they are. The result is a PNG.
 It runs on a GPU; the first job after a quiet spell waits a minute or two for it to start,
-and each job takes about a minute.
+and each job takes about two minutes, longer for big extensions, which are painted in
+up to four passes so the new area continues the scene instead of repeating it.
 
 Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`. Send a
 shape and/or zoom, or the pixels to add to each side:

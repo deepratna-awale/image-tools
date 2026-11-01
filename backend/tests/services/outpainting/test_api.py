@@ -8,7 +8,7 @@ from PIL import Image
 import main
 from services.outpainting import models
 from services.outpainting import router as outpainting_router
-from services.outpainting.processor import parse_aspect_ratio, photo_weight, plan_canvas, work_size
+from services.outpainting.processor import parse_aspect_ratio, photo_weight, plan_canvas, plan_stages, work_size
 
 PHOTO = (200, 50, 50)
 PAINT = (0, 255, 0)
@@ -180,6 +180,32 @@ def test_large_canvases_are_enlarged_with_the_upscaler(client, queue, painter, m
     assert pixels.shape == (450, 600, 3)
     assert tuple(pixels[5, 5]) == PAINT
     assert tuple(pixels[225, 300]) == PHOTO
+
+
+def test_big_extensions_are_painted_in_stages():
+    # 16:9 from 3:2 grows less than 1.4x: one pass
+    assert plan_stages(1400, 934, 1660, 934, 130, 0, 1.4) == [(1660, 934, 130, 0)]
+    # Zooming out 1.5x: two passes, the photo moving to its place in the middle
+    stages = plan_stages(1400, 934, 2100, 1401, 350, 233, 1.4)
+    assert len(stages) == 2 and stages[-1][:2] == (2100, 1401)
+    assert sum(stage[2] for stage in stages) == 350 and sum(stage[3] for stage in stages) == 233
+    for (width, height, _, _), (next_w, next_h, _, _) in zip([(1400, 934, 0, 0)] + stages, stages):
+        assert max(next_w / width, next_h / height) <= 1.4 + 1e-3
+    # Taller by 2.7x: three passes, growing only the height
+    stages = plan_stages(1400, 934, 1400, 2489, 0, 777, 1.4)
+    assert len(stages) == 3 and all(stage[0] == 1400 and stage[2] == 0 for stage in stages)
+
+
+def test_each_stage_paints_around_the_last(client, queue, painter):
+    job_id = submit(client, png(80, 60), {"zoom": "2"}).json()["job_id"]
+    run_worker(queue)
+    pixels = result(client, job_id)
+    assert pixels.shape == (120, 160, 3)
+    assert tuple(pixels[2, 2]) == PAINT and tuple(pixels[60, 80]) == PHOTO
+    assert len(painter.calls) == 3
+    # The first pass is shown the photo, the later ones the last pass's result
+    assert painter.calls[0]["photo"] == (80, 60)
+    assert painter.calls[1]["photo"] != (80, 60)
 
 
 def test_without_a_gpu_the_job_fails_politely(client, queue, painter, monkeypatch):
