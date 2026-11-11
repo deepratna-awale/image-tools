@@ -28,19 +28,9 @@ ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae
 # Upscaler: Real-ESRGAN photo and anime models (BSD-3-Clause) and the CLIP model that picks
 # between them (open_clip ViT-B-32 trained on LAION-400M, MIT), as url=filename
 ARG UPSCALE_MODELS="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
-RUN python -c "from rembg import new_session; new_session('${REMBG_MODEL}')" \
-    && python -c "import urllib.request; urllib.request.urlretrieve('${SKY_MODEL_URL}', '${SKY_MODEL_PATH}')" \
-    && for vae in ${AI_SHIELD_VAES}; do \
-         repo="${vae%%:*}"; dir="/opt/models/${vae##*:}"; mkdir -p "$dir"; \
-         for file in config.json diffusion_pytorch_model.safetensors; do \
-           python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
-             "https://huggingface.co/${repo}/resolve/main/${file}" "${dir}/${file}"; \
-         done; \
-       done \
-    && for model in ${UPSCALE_MODELS}; do \
-         python -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" \
-           "${model%%=*}" "/opt/models/${model##*=}"; \
-       done \
+# The build args reach the script as environment variables (same names)
+COPY deployment/fetch_models.py deployment/fetch_models.py
+RUN python deployment/fetch_models.py \
     && mkdir -p "$NUMBA_CACHE_DIR" \
     && chmod -R a+rX /opt/models \
     && chmod -R a+rwX "$NUMBA_CACHE_DIR"
