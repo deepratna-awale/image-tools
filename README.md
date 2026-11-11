@@ -34,6 +34,9 @@
 | Tool | What it does |
 | --- | --- |
 | [Resize, Compress & Convert](https://imagetools.top/resize-convert) | Opens JPG, PNG, WebP, AVIF, HEIC/HEIF, GIF, BMP, ICO, TIFF and SVG; saves as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF, with an optional target file size. |
+| [Crop, Rotate & Flip](https://imagetools.top/crop-rotate) | Free crop or fixed shapes, social media sizes (Instagram, Story, YouTube thumbnail, X, LinkedIn...) at exact pixel sizes, rotate, straighten and flip. |
+| [Filters & Adjustments](https://imagetools.top/adjust) | Brightness, contrast, saturation, warmth, highlights/shadows, sharpen, vignette and grain, plus B&W, sepia, vintage and other presets. Works on a batch. |
+| [Border & Round Corners](https://imagetools.top/border) | Borders, rounded corners, circle crop, drop shadow, and padding to square or 9:16 without cropping. |
 | [Passport & ID Photo](https://imagetools.top/passport-photo) | Country presets on a plain background, plus a printable 6×4 in sheet. |
 | [Watermark & Add Text](https://imagetools.top/watermark) | Text or logo watermarks on one photo or a whole batch. |
 | [Images to PDF](https://imagetools.top/images-to-pdf) | Combine images into one PDF in the order you choose. |
@@ -43,10 +46,11 @@
 | Tool | What it does |
 | --- | --- |
 | [Remove Photo Metadata](https://imagetools.top/remove-metadata) | Strip GPS location, camera details and other EXIF/XMP data without re-encoding. |
+| [Blur & Pixelate](https://imagetools.top/censor) | Hide faces, names or number plates with pixelation, blur or a solid box. |
 | [Prompt Reader](https://imagetools.top/prompt-reader) | See the prompt, seed, model and settings saved in Stable Diffusion images (AUTOMATIC1111/Forge, ComfyUI, Fooocus, InvokeAI, NovelAI). |
 | [AI Shield](https://imagetools.top/ai-shield) | Cloak art against Stable Diffusion mimicry and img2img (an encoder attack in the style of PhotoGuard and Mist, aimed at the SD 1.x/2.x and SDXL VAEs, run on the CPU) and tag files as not for AI training (IPTC Data Mining, TDMRep, `noai`). |
 
-Resize/convert, remove metadata, watermark and images to PDF run entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
+Resize/convert, crop, filters, borders, blur & pixelate, remove metadata, watermark and images to PDF run entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
 
 ## Developer API
 
