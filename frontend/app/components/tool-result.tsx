@@ -4,6 +4,8 @@ import { useEffect, useMemo } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { captureDownload } from "@/lib/image-utils";
+import OpenInTool from "./open-in-tool";
 
 interface ToolResultProps {
   original: File;
@@ -37,7 +39,7 @@ export default function ToolResult({ original, resultUrl, downloadName, onDownlo
           </Card>
         ))}
       </div>
-      <div className="flex justify-center mt-4">
+      <div className="flex flex-wrap items-start justify-center gap-2 mt-4">
         {onDownload ? (
           <Button className="rounded-full gap-2" onClick={onDownload}>
             <Download className="h-4 w-4" />
@@ -51,6 +53,13 @@ export default function ToolResult({ original, resultUrl, downloadName, onDownlo
             </a>
           </Button>
         )}
+        <OpenInTool
+          getFile={async () =>
+            onDownload
+              ? captureDownload(onDownload)
+              : new File([await (await fetch(resultUrl)).blob()], downloadName || "result.png", { type: "image/png" })
+          }
+        />
       </div>
     </div>
   );

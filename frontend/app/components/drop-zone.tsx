@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { takeHandoff } from "@/lib/handoff";
 import {
   Dropzone,
   DropzoneContent,
@@ -18,6 +19,34 @@ interface DropZoneProps {
 
 const SERVER_ACCEPT = { "image/jpeg": [".jpg", ".jpeg"], "image/png": [".png"], "image/webp": [".webp"] };
 
+/** Every drop zone on the page, in the order they appeared: a paste goes to the first empty one */
+const zones: { isEmpty: () => boolean; add: (files: File[]) => void }[] = [];
+let pasteListening = false;
+
+function onPaste(event: ClipboardEvent) {
+  const target = event.target;
+  if (target instanceof Element && target.closest("input, textarea, [contenteditable=true]")) return;
+  const pasted = Array.from(event.clipboardData?.files ?? []);
+  if (!pasted.length || !zones.length) return;
+  event.preventDefault();
+  // Screenshots arrive as "image.png"; give them a name that says where they came from
+  const files = pasted.map((file) =>
+    file.name === "image.png" ? new File([file], `pasted-${Date.now()}.png`, { type: file.type }) : file,
+  );
+  (zones.find((zone) => zone.isEmpty()) ?? zones[0]).add(files);
+}
+
+/** The same type check the drop zone makes, for files that arrive by paste or from another tool */
+function accepts(file: File, accept: Record<string, string[]>) {
+  const name = file.name.toLowerCase();
+  return Object.entries(accept).some(
+    ([type, extensions]) =>
+      type === file.type ||
+      (type.endsWith("/*") && file.type.startsWith(type.slice(0, -1))) ||
+      extensions.some((extension) => name.endsWith(extension.toLowerCase())),
+  );
+}
+
 const DropZone = ({ onFilesChange, maxFiles = 10, maxSizeMb = 10, accept = SERVER_ACCEPT }: DropZoneProps) => {
   const [files, setFiles] = useState<File[] | undefined>();
   const [error, setError] = useState("");
@@ -29,6 +58,48 @@ const DropZone = ({ onFilesChange, maxFiles = 10, maxSizeMb = 10, accept = SERVE
       onFilesChange(files);
     }
   };
+
+  /** Files pasted or handed over from another tool, checked like dropped ones */
+  const addFiles = (incoming: File[]) => {
+    const usable = incoming.filter((file) => accepts(file, accept));
+    if (!usable.length) {
+      setError("This tool can't open that kind of file");
+      return;
+    }
+    const tooBig = usable.find((file) => file.size > 1024 * 1024 * maxSizeMb);
+    if (tooBig) {
+      setError(`${tooBig.name} is larger than ${maxSizeMb} MB`);
+      return;
+    }
+    handleDrop(usable.slice(0, maxFiles));
+  };
+  const addFilesRef = useRef(addFiles);
+  addFilesRef.current = addFiles;
+
+  // An image sent here from another tool's result
+  useEffect(() => {
+    const file = takeHandoff();
+    if (file) addFilesRef.current([file]);
+  }, []);
+
+  // Paste an image (a screenshot, or one copied from another app) anywhere on the page
+  const filesRef = useRef(files);
+  filesRef.current = files;
+  useEffect(() => {
+    const zone = { isEmpty: () => !filesRef.current?.length, add: (incoming: File[]) => addFilesRef.current(incoming) };
+    zones.push(zone);
+    if (!pasteListening) {
+      window.addEventListener("paste", onPaste);
+      pasteListening = true;
+    }
+    return () => {
+      zones.splice(zones.indexOf(zone), 1);
+      if (!zones.length) {
+        window.removeEventListener("paste", onPaste);
+        pasteListening = false;
+      }
+    };
+  }, []);
 
   return (
     <div className="flex w-full flex-col items-center justify-center px-4">
@@ -61,6 +132,9 @@ const DropZone = ({ onFilesChange, maxFiles = 10, maxSizeMb = 10, accept = SERVE
         <DropzoneContent />
       </Dropzone>
       {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      {(!files || files.length === 0) && (
+        <p className="mt-2 text-xs text-muted-foreground">You can also paste an image (Ctrl+V / ⌘V).</p>
+      )}
     </div>
   );
 };

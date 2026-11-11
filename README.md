@@ -84,6 +84,8 @@
 
 Every Convert, Edit, Create and Utilities tool, plus Blur & Pixelate, Face Blur, Remove Metadata and Prompt Reader, runs entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
 
+Every tool also takes a pasted image (Ctrl+V / ⌘V), and **Open in...** under a result sends it straight to another tool, so jobs can be chained (remove the background, then add a border, then make a favicon). The site can be installed as an app from the browser.
+
 ## Developer API
 
 Other apps can call background removal, the upscaler, the watermark remover and outpainting on the live site with an API key. Anyone can create a free key at [imagetools.top/api-keys](https://imagetools.top/api-keys); free keys have per-minute and daily limits.
