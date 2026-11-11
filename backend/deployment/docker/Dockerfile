@@ -30,6 +30,9 @@ ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae
 ARG UPSCALE_MODELS="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
 # Object eraser: Big LaMa (Apache-2.0), TorchScript build
 ARG ERASER_MODEL_URL=https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt
+# Old photo restorer: GFPGAN v1.4 (Apache-2.0), the YuNet face finder (MIT) and DDColor (Apache-2.0)
+ARG RESTORE_MODELS="https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth=GFPGANv1.4.pth https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx=face_detection_yunet_2023mar.onnx"
+ARG COLORIZE_MODEL_REPO=piddnad/ddcolor_paper_tiny
 # The build args reach the script as environment variables (same names)
 COPY deployment/fetch_models.py deployment/fetch_models.py
 RUN python deployment/fetch_models.py \

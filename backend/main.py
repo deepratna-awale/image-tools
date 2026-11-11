@@ -21,6 +21,7 @@ from services.upscaling.router import router as upscaling_router
 from services.watermark_removal.router import router as watermark_removal_router
 from services.outpainting.router import router as outpainting_router
 from services.object_removal.router import router as object_removal_router
+from services.photo_restoration.router import router as photo_restoration_router
 
 # Configure logging
 logging.basicConfig(
@@ -52,7 +53,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="AI-powered image processing API with background removal, background changing, sky replacement, Stable Diffusion metadata reading, AI Shield, upscaling, watermark removal, outpainting and object removal",
+    description="AI-powered image processing API with background removal, background changing, sky replacement, Stable Diffusion metadata reading, AI Shield, upscaling, watermark removal, outpainting, object removal and photo restoration",
     lifespan=lifespan
 )
 
@@ -111,6 +112,7 @@ async def root():
                 "watermark_removal",
                 "outpainting",
                 "object_removal",
+                "photo_restoration",
             ],
             "docs": "/docs",
             "health": "/health"
@@ -128,6 +130,7 @@ app.include_router(upscaling_router, prefix=settings.api_prefix)
 app.include_router(watermark_removal_router, prefix=settings.api_prefix)
 app.include_router(outpainting_router, prefix=settings.api_prefix)
 app.include_router(object_removal_router, prefix=settings.api_prefix)
+app.include_router(photo_restoration_router, prefix=settings.api_prefix)
 app.include_router(api_keys_router, prefix=settings.api_prefix)
 app.include_router(public_api_keys_router, prefix=settings.api_prefix)
 

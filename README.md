@@ -28,6 +28,8 @@
 | [Image Upscaler](https://imagetools.top/upscaler) | Enlarge up to 4× (any factor, like 1.5×) or to an exact size, cropping to fit. Detects anime/art vs. photos and uses the matching Real-ESRGAN model. |
 | [Watermark Remover](https://imagetools.top/watermark-remover) | Florence-2 finds watermarks, logos and text, and FLUX.1 Kontext edits them out. Fix the marked area with a brush first if you like. |
 | [Object Eraser](https://imagetools.top/object-eraser) | Paint over people, wires, spots or text and Big LaMa fills the space from the background around it. Runs on the server's CPU in a few seconds. |
+| [Old Photo Restorer](https://imagetools.top/photo-restorer) | GFPGAN redraws blurry, faded or damaged faces (found with YuNet) and DDColor colours black and white photos. CPU, a few seconds. |
+| [Colorize Photo](https://imagetools.top/colorize) | The restorer set to colour every photo, sepia and toned ones included. |
 | [Outpainting](https://imagetools.top/outpainting) | Zoom out or reshape a photo (16:9, square, portrait...) and FLUX.1 Kontext paints in what lies beyond its edges, optionally guided by a description. The original pixels are kept as they are. |
 
 ### Convert
@@ -190,7 +192,7 @@ The frontend needs `BACKEND_URL` (default `http://localhost:8000`). API key limi
 
 The sky-swap model (SegFormer-b0 fine-tuned on ADE20K) is under NVIDIA's non-commercial licence. Point `SKY_MODEL_URL` (a build arg in `backend/deployment/docker/Dockerfile`) at a commercially licensed model before running the site commercially.
 
-The object eraser uses Big LaMa (Apache-2.0); face detection uses MediaPipe's BlazeFace (Apache-2.0) and text recognition Tesseract (Apache-2.0), both served by the site itself.
+The object eraser uses Big LaMa (Apache-2.0) and the photo restorer GFPGAN v1.4 (Apache-2.0), YuNet (MIT) and DDColor (Apache-2.0); face detection uses MediaPipe's BlazeFace (Apache-2.0) and text recognition Tesseract (Apache-2.0), both served by the site itself.
 
 The background-removal model (BRIA RMBG 2.0) is under CC BY-NC 4.0, also non-commercial. Set the `REMBG_MODEL` build arg and env var to `isnet-general-use` or `birefnet-general` for a permissive alternative.
 
@@ -236,7 +238,8 @@ Browser-only tools skip steps 1 and 2.
 - [x] Outpainting
 - [ ] Shared job state (Redis) so the API and worker can scale out
 - [x] Face blur, image to text (OCR) and object eraser
-- [ ] More tools: restore and colorize old photos, captions, denoise
+- [x] Old photo restorer and colorizer
+- [ ] More tools: captions / alt text, denoise
 
 ## License
 

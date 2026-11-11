@@ -23,6 +23,8 @@ safetensors>=0.4
 # Upscaler (Real-ESRGAN models, and CLIP to tell anime from photos)
 torchvision
 spandrel>=0.4
+# Old photo restorer: DDColor colorization lives in spandrel's extra architectures
+spandrel_extra_arches>=0.2
 open_clip_torch>=2.24
 
 # File handling

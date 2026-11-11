@@ -26,7 +26,7 @@ export default function PrivacyPage() {
       <p>
         <strong>Background Remover</strong>, <strong>Background Changer</strong>, <strong>Blur Background</strong>,{" "}
         <strong>Passport &amp; ID Photo</strong>, <strong>Sky Swap</strong>, <strong>Image Upscaler</strong>,{" "}
-        <strong>Watermark Remover</strong>, <strong>Object Eraser</strong>, <strong>Outpainting</strong>,{" "}
+        <strong>Watermark Remover</strong>, <strong>Object Eraser</strong>, <strong>Old Photo Restorer</strong>, <strong>Colorize Photo</strong>, <strong>Outpainting</strong>,{" "}
         <strong>AI Shield</strong> and <strong>Prompt Reader</strong> send your image to our server to be processed.
       </p>
       <ul>

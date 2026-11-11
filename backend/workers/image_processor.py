@@ -18,6 +18,7 @@ from services.upscaling.service import UpscalingService
 from services.watermark_removal.service import WatermarkRemovalService
 from services.outpainting.service import OutpaintingService
 from services.object_removal.service import ObjectRemovalService
+from services.photo_restoration.service import PhotoRestorationService
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class ImageProcessorWorker:
             ServiceType.WATERMARK_REMOVAL: WatermarkRemovalService(),
             ServiceType.OUTPAINTING: OutpaintingService(),
             ServiceType.OBJECT_REMOVAL: ObjectRemovalService(),
+            ServiceType.PHOTO_RESTORATION: PhotoRestorationService(),
         }
 
         # Model work goes to the GPU endpoint when one is configured

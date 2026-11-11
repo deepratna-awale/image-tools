@@ -9,6 +9,7 @@ A scalable, queue-based image processing API built with FastAPI, designed for AW
 - ✅ **Background Changing** - Replace image backgrounds
 - ✅ **Sky Replacement** - Replace skies in landscape images
 - ✅ **Outpainting** - Extend images beyond their borders (GPU only)
+- ✅ **Photo Restoration** - Restore faces (GFPGAN) and colorize black and white photos (DDColor), CPU
 - ✅ **Object Removal** - Erase what a mask marks and fill it from the background (Big LaMa, CPU)
 
 ## Architecture

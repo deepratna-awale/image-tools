@@ -13,6 +13,8 @@ variables (the Dockerfile's build args), with the same defaults:
     AI_SHIELD_VAES   "hf-repo:folder" pairs of Stable Diffusion VAEs for AI Shield
     UPSCALE_MODELS   "url=filename" pairs: Real-ESRGAN photo/anime and the CLIP picker
     ERASER_MODEL_URL Big LaMa TorchScript model for the object eraser
+    RESTORE_MODELS   "url=filename" pairs: GFPGAN face restorer and the YuNet face finder
+    COLORIZE_MODEL_REPO  Hugging Face repo of the DDColor colorizer
 
 The GPU-only models (Florence-2, FLUX.1 Kontext, SDXL Inpainting) are fetched by
 deployment/gpu/fetch_watermark_models.py for the GPU image instead.
@@ -39,6 +41,12 @@ UPSCALE_MODELS = os.environ.get("UPSCALE_MODELS") or (
 ERASER_MODEL_URL = os.environ.get("ERASER_MODEL_URL") or (
     "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt"
 )
+RESTORE_MODELS = os.environ.get("RESTORE_MODELS") or (
+    "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth=GFPGANv1.4.pth "
+    "https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/face_detection_yunet/"
+    "face_detection_yunet_2023mar.onnx=face_detection_yunet_2023mar.onnx"
+)
+COLORIZE_MODEL_REPO = os.environ.get("COLORIZE_MODEL_REPO") or "piddnad/ddcolor_paper_tiny"
 
 
 def download(url: str, path: str) -> None:
@@ -73,6 +81,19 @@ def main() -> None:
         download(url, os.path.join(MODELS_DIR, name))
 
     download(ERASER_MODEL_URL, os.path.join(MODELS_DIR, "big-lama.pt"))
+
+    for model in RESTORE_MODELS.split():
+        url, name = model.rsplit("=", 1)
+        download(url, os.path.join(MODELS_DIR, name))
+
+    colorizer_dir = os.path.join(MODELS_DIR, "ddcolor-paper-tiny")
+    if os.path.isdir(colorizer_dir) and os.listdir(colorizer_dir):
+        print(f"have  {colorizer_dir}")
+    else:
+        print(f"fetch {COLORIZE_MODEL_REPO}")
+        from huggingface_hub import snapshot_download
+
+        snapshot_download(COLORIZE_MODEL_REPO, local_dir=colorizer_dir)
 
     print(f"Models ready in {MODELS_DIR}")
 
