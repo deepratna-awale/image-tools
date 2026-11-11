@@ -12,7 +12,7 @@ export function Footer() {
             Free image tools that work in your browser. No sign-up required.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-8 sm:flex sm:gap-12">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 xl:grid-cols-6 xl:gap-10">
           {toolGroups().map(({ id, name, tools }) => (
             <div key={id} className="flex flex-col gap-3">
               <span className="text-sm font-medium">{name}</span>

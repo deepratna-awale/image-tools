@@ -52,6 +52,14 @@
 | [Passport & ID Photo](https://imagetools.top/passport-photo) | Country presets on a plain background, plus a printable 6×4 in sheet. |
 | [Watermark & Add Text](https://imagetools.top/watermark) | Text or logo watermarks on one photo or a whole batch. |
 
+### Create
+
+| Tool | What it does |
+| --- | --- |
+| [Collage Maker](https://imagetools.top/collage) | Grid collages (2 to 9 photos, square to 9:16) with spacing and rounded corners, or images stitched side by side or top to bottom. |
+| [Split Image](https://imagetools.top/split-image) | Cut a picture into tiles for an Instagram grid (3 × 1, 3 × 3) or a seamless carousel. |
+| [Meme Generator](https://imagetools.top/meme) | Classic top and bottom text or a modern caption bar on your own picture. |
+
 ### Privacy & Metadata
 
 | Tool | What it does |
@@ -61,7 +69,15 @@
 | [Prompt Reader](https://imagetools.top/prompt-reader) | See the prompt, seed, model and settings saved in Stable Diffusion images (AUTOMATIC1111/Forge, ComfyUI, Fooocus, InvokeAI, NovelAI). |
 | [AI Shield](https://imagetools.top/ai-shield) | Cloak art against Stable Diffusion mimicry and img2img (an encoder attack in the style of PhotoGuard and Mist, aimed at the SD 1.x/2.x and SDXL VAEs, run on the CPU) and tag files as not for AI training (IPTC Data Mining, TDMRep, `noai`). |
 
-Every Convert and Edit tool, plus Blur & Pixelate, Remove Metadata and Prompt Reader, runs entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
+### Utilities
+
+| Tool | What it does |
+| --- | --- |
+| [Color Picker & Palette](https://imagetools.top/color-palette) | Pick colours from an image and pull out its main palette as HEX, RGB, HSL, CSS or PNG. |
+| [Compare Images](https://imagetools.top/compare) | Before/after slider, side by side, or a difference view with the share of changed pixels and PSNR. |
+| [Image to Base64](https://imagetools.top/base64) | Data URIs with HTML/CSS/Markdown snippets, and Base64 back to an image file. |
+
+Every Convert, Edit, Create and Utilities tool, plus Blur & Pixelate, Remove Metadata and Prompt Reader, runs entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
 
 ## Developer API
 
