@@ -5,6 +5,12 @@ import {
   Frame,
   SlidersHorizontal,
   Eraser,
+  FileImage,
+  Film,
+  Globe,
+  ImagePlay,
+  PenTool,
+  Repeat,
   Expand,
   FileSearch,
   FileText,
@@ -20,7 +26,7 @@ import {
   Sunset,
 } from "lucide-react";
 
-export type ToolCategory = "ai" | "edit" | "privacy";
+export type ToolCategory = "convert" | "edit" | "ai" | "privacy";
 
 export interface Tool {
   href: string;
@@ -35,7 +41,8 @@ export interface Tool {
 
 /** Home page sections and menu groups, in display order. Empty ones are hidden. */
 export const CATEGORIES: { id: ToolCategory; name: string; description: string }[] = [
-  { id: "edit", name: "Edit & Convert", description: "Resize, convert and prepare images for wherever they're going." },
+  { id: "convert", name: "Convert", description: "Change formats, shrink files, and turn images into PDFs, GIFs, vectors or icons." },
+  { id: "edit", name: "Edit", description: "Crop, adjust, frame and prepare images for wherever they're going." },
   { id: "ai", name: "Backgrounds & AI", description: "Cut out, replace or restyle what's behind your subject." },
   {
     id: "privacy",
@@ -108,7 +115,55 @@ export const TOOLS: Tool[] = [
     description: "Resize, shrink to a target size and convert between JPG, PNG and WebP.",
     image: "/tiles/resize-convert.webp",
     icon: Scaling,
-    category: "edit",
+    category: "convert",
+  },
+  {
+    href: "/convert",
+    name: "Format Converter",
+    description: "HEIC to JPG, WebP to PNG, SVG to PNG, PNG to ICO and 180+ more conversions.",
+    image: "/tiles/convert.webp",
+    icon: Repeat,
+    category: "convert",
+  },
+  {
+    href: "/pdf-to-images",
+    name: "PDF to Images",
+    description: "Turn every page of a PDF into a JPG, PNG or WebP at up to 300 DPI.",
+    image: "/tiles/pdf-to-images.webp",
+    icon: FileImage,
+    category: "convert",
+  },
+  {
+    href: "/image-to-svg",
+    name: "Image to SVG",
+    description: "Trace a logo, icon or drawing into a scalable SVG vector.",
+    image: "/tiles/image-to-svg.webp",
+    icon: PenTool,
+    category: "convert",
+  },
+  {
+    href: "/gif-maker",
+    name: "GIF Maker",
+    description: "Make an animated GIF from photos or a video clip.",
+    image: "/tiles/gif-maker.webp",
+    icon: Film,
+    category: "convert",
+  },
+  {
+    href: "/gif-editor",
+    name: "GIF Editor",
+    description: "Resize, speed up, reverse or split a GIF, or turn it into a video.",
+    image: "/tiles/gif-editor.webp",
+    icon: ImagePlay,
+    category: "convert",
+  },
+  {
+    href: "/favicon",
+    name: "Favicon Generator",
+    description: "A complete favicon set (ICO, PNG, Apple and Android icons) from an image, letter or emoji.",
+    image: "/tiles/favicon.webp",
+    icon: Globe,
+    category: "convert",
   },
   {
     href: "/crop-rotate",
@@ -156,7 +211,7 @@ export const TOOLS: Tool[] = [
     description: "Combine images into one PDF in the order you choose.",
     image: "/tiles/images-to-pdf.webp",
     icon: FileText,
-    category: "edit",
+    category: "convert",
   },
   {
     href: "/remove-metadata",

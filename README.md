@@ -29,17 +29,28 @@
 | [Watermark Remover](https://imagetools.top/watermark-remover) | Florence-2 finds watermarks, logos and text, and FLUX.1 Kontext edits them out. Fix the marked area with a brush first if you like. |
 | [Outpainting](https://imagetools.top/outpainting) | Zoom out or reshape a photo (16:9, square, portrait...) and FLUX.1 Kontext paints in what lies beyond its edges, optionally guided by a description. The original pixels are kept as they are. |
 
-### Edit & Convert
+### Convert
 
 | Tool | What it does |
 | --- | --- |
-| [Resize, Compress & Convert](https://imagetools.top/resize-convert) | Opens JPG, PNG, WebP, AVIF, HEIC/HEIF, GIF, BMP, ICO, TIFF and SVG; saves as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF, with an optional target file size. |
+| [Resize, Compress & Convert](https://imagetools.top/resize-convert) | Opens JPG, PNG, WebP, AVIF, JPEG XL, HEIC/HEIF, GIF, BMP, ICO, TIFF, SVG, PSD and camera RAW; saves as JPG, PNG, WebP, AVIF, JPEG XL, GIF, BMP, ICO, TIFF or PDF, with an optional target file size. |
+| [Format Converter](https://imagetools.top/convert) | A page for each of 191 conversions (HEIC to JPG, WebP to PNG, SVG to PNG, CR2 to JPG...), batch up to 50 files. |
+| [PDF to Images](https://imagetools.top/pdf-to-images) | Every page (or a range) of a PDF as JPG, PNG, WebP, AVIF or TIFF at 72-300 DPI. |
+| [Images to PDF](https://imagetools.top/images-to-pdf) | Combine images into one PDF in the order you choose. |
+| [Image to SVG](https://imagetools.top/image-to-svg) | Trace logos, icons, drawings or photos into a vector SVG. |
+| [GIF Maker](https://imagetools.top/gif-maker) | Animated GIFs from photos or from a video clip. |
+| [GIF Editor](https://imagetools.top/gif-editor) | Resize, speed up, reverse, boomerang or thin out a GIF, split it into frames, or save it as a video. |
+| [Favicon Generator](https://imagetools.top/favicon) | favicon.ico, PNG sizes, Apple touch icon, Android icons and site.webmanifest from an image, letter or emoji. |
+
+### Edit
+
+| Tool | What it does |
+| --- | --- |
 | [Crop, Rotate & Flip](https://imagetools.top/crop-rotate) | Free crop or fixed shapes, social media sizes (Instagram, Story, YouTube thumbnail, X, LinkedIn...) at exact pixel sizes, rotate, straighten and flip. |
 | [Filters & Adjustments](https://imagetools.top/adjust) | Brightness, contrast, saturation, warmth, highlights/shadows, sharpen, vignette and grain, plus B&W, sepia, vintage and other presets. Works on a batch. |
 | [Border & Round Corners](https://imagetools.top/border) | Borders, rounded corners, circle crop, drop shadow, and padding to square or 9:16 without cropping. |
 | [Passport & ID Photo](https://imagetools.top/passport-photo) | Country presets on a plain background, plus a printable 6×4 in sheet. |
 | [Watermark & Add Text](https://imagetools.top/watermark) | Text or logo watermarks on one photo or a whole batch. |
-| [Images to PDF](https://imagetools.top/images-to-pdf) | Combine images into one PDF in the order you choose. |
 
 ### Privacy & Metadata
 
@@ -50,7 +61,7 @@
 | [Prompt Reader](https://imagetools.top/prompt-reader) | See the prompt, seed, model and settings saved in Stable Diffusion images (AUTOMATIC1111/Forge, ComfyUI, Fooocus, InvokeAI, NovelAI). |
 | [AI Shield](https://imagetools.top/ai-shield) | Cloak art against Stable Diffusion mimicry and img2img (an encoder attack in the style of PhotoGuard and Mist, aimed at the SD 1.x/2.x and SDXL VAEs, run on the CPU) and tag files as not for AI training (IPTC Data Mining, TDMRep, `noai`). |
 
-Resize/convert, crop, filters, borders, blur & pixelate, remove metadata, watermark and images to PDF run entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
+Every Convert and Edit tool, plus Blur & Pixelate, Remove Metadata and Prompt Reader, runs entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
 
 ## Developer API
 

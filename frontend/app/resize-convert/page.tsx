@@ -138,7 +138,7 @@ export default function ResizeConvertPage() {
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
       <ToolHeader
         href="/resize-convert"
-        description="Shrink photos, change their size, or convert between formats: open JPG, PNG, WebP, AVIF, HEIC, GIF, BMP, ICO, TIFF and SVG, and save as JPG, PNG, WebP, AVIF, GIF, BMP, ICO, TIFF or PDF. Everything happens in your browser, so your images are never uploaded."
+        description="Shrink photos, change their size, or convert between formats: open JPG, PNG, WebP, AVIF, JPEG XL, HEIC, GIF, BMP, ICO, TIFF, SVG, PSD and camera RAW, and save as JPG, PNG, WebP, AVIF, JPEG XL, GIF, BMP, ICO, TIFF or PDF. Everything happens in your browser, so your images are never uploaded."
       />
       <DropZone maxFiles={20} maxSizeMb={50} accept={IMAGE_ACCEPT} onFilesChange={setFiles} />
 

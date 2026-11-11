@@ -1,13 +1,14 @@
 // Opening and saving every image format the browser tools support. Formats the browser can't handle
 // on its own (HEIC, TIFF, AVIF and WebP saving, GIF, BMP, ICO) use small libraries loaded on demand.
 
-export type ExportFormat = "jpg" | "png" | "webp" | "avif" | "gif" | "bmp" | "ico" | "tiff" | "pdf";
+export type ExportFormat = "jpg" | "png" | "webp" | "avif" | "jxl" | "gif" | "bmp" | "ico" | "tiff" | "pdf";
 
 export const EXPORT_FORMATS: { id: ExportFormat; label: string; mime: string; lossy: boolean }[] = [
   { id: "jpg", label: "JPG", mime: "image/jpeg", lossy: true },
   { id: "png", label: "PNG", mime: "image/png", lossy: false },
   { id: "webp", label: "WebP", mime: "image/webp", lossy: true },
   { id: "avif", label: "AVIF", mime: "image/avif", lossy: true },
+  { id: "jxl", label: "JPEG XL", mime: "image/jxl", lossy: true },
   { id: "gif", label: "GIF", mime: "image/gif", lossy: false },
   { id: "bmp", label: "BMP", mime: "image/bmp", lossy: false },
   { id: "ico", label: "ICO", mime: "image/x-icon", lossy: false },
@@ -16,6 +17,24 @@ export const EXPORT_FORMATS: { id: ExportFormat; label: string; mime: string; lo
 ];
 
 export const formatInfo = (id: ExportFormat) => EXPORT_FORMATS.find((format) => format.id === id)!;
+
+/** Camera RAW files, opened through the full-size JPEG preview the camera stores inside them */
+const RAW_TYPES: [string, string[]][] = [
+  ["image/x-adobe-dng", [".dng"]],
+  ["image/x-canon-cr2", [".cr2"]],
+  ["image/x-canon-cr3", [".cr3"]],
+  ["image/x-canon-crw", [".crw"]],
+  ["image/x-nikon-nef", [".nef", ".nrw"]],
+  ["image/x-sony-arw", [".arw", ".srf", ".sr2"]],
+  ["image/x-fuji-raf", [".raf"]],
+  ["image/x-olympus-orf", [".orf"]],
+  ["image/x-panasonic-rw2", [".rw2", ".rwl"]],
+  ["image/x-pentax-pef", [".pef"]],
+  ["image/x-samsung-srw", [".srw"]],
+  ["image/x-sigma-x3f", [".x3f"]],
+  ["image/x-hasselblad-3fr", [".3fr"]],
+];
+const RAW_EXTENSIONS = new Set(RAW_TYPES.flatMap(([, extensions]) => extensions));
 
 /** Every format the browser tools open, for the file picker */
 export const IMAGE_ACCEPT: Record<string, string[]> = {
@@ -33,23 +52,31 @@ export const IMAGE_ACCEPT: Record<string, string[]> = {
   "image/heif": [".heif", ".hif"],
   "image/heic-sequence": [".heics"],
   "image/heif-sequence": [".heifs"],
+  "image/jxl": [".jxl"],
+  "image/vnd.adobe.photoshop": [".psd"],
+  ...Object.fromEntries(RAW_TYPES),
 };
 
 /** Formats the server tools take directly; anything else is converted in the browser before upload */
 export const SERVER_FORMATS = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-type Kind = "heic" | "tiff" | "svg" | "other";
+type Kind = "heic" | "tiff" | "svg" | "psd" | "jxl" | "raw" | "other";
 
 async function sniff(file: Blob & { name?: string }): Promise<Kind> {
   const head = new Uint8Array(await file.slice(0, 32).arrayBuffer());
   const ascii = (start: number, end: number) => String.fromCharCode(...head.subarray(start, end));
+  const name = (file.name ?? "").toLowerCase();
+  // Most RAW formats are TIFF inside, so check the extension before the TIFF signature
+  const extension = name.slice(name.lastIndexOf("."));
+  if (RAW_EXTENSIONS.has(extension)) return "raw";
+  if (ascii(0, 4) === "8BPS") return "psd";
+  if ((head[0] === 0xff && head[1] === 0x0a) || ascii(4, 8) === "JXL ") return "jxl";
   if ((head[0] === 0x49 && head[1] === 0x49 && head[2] === 0x2a) || (head[0] === 0x4d && head[1] === 0x4d && head[3] === 0x2a)) {
     return "tiff";
   }
   if (ascii(4, 8) === "ftyp" && ["heic", "heix", "hevc", "hevx", "heim", "heis", "mif1", "msf1"].includes(ascii(8, 12))) {
     return "heic";
   }
-  const name = (file.name ?? "").toLowerCase();
   if (file.type === "image/svg+xml" || name.endsWith(".svg")) return "svg";
   return "other";
 }
@@ -86,6 +113,72 @@ async function decodeSvg(file: Blob): Promise<ImageBitmap> {
   }
 }
 
+async function decodePsd(file: Blob): Promise<ImageBitmap> {
+  const { readPsd } = await import("ag-psd");
+  // The flattened image Photoshop saves alongside the layers ("maximize compatibility")
+  const psd = readPsd(await file.arrayBuffer(), { skipLayerImageData: true, skipThumbnail: true, useImageData: true });
+  if (!psd.imageData) throw new Error("This PSD has no flattened image; re-save it with Maximize Compatibility on");
+  const { width, height, data } = psd.imageData;
+  return createImageBitmap(new ImageData(new Uint8ClampedArray(data.buffer, data.byteOffset, data.length), width, height));
+}
+
+async function decodeJxl(file: Blob): Promise<ImageBitmap> {
+  // Safari 17+ reads JPEG XL natively; elsewhere use the WebAssembly decoder
+  try {
+    return await createImageBitmap(file);
+  } catch {
+    const decode = (await import("@jsquash/jxl/decode")).default;
+    return createImageBitmap(await decode(await file.arrayBuffer()));
+  }
+}
+
+/**
+ * Camera RAW files carry a full-size JPEG preview developed by the camera. Find the JPEG streams in the file
+ * and keep the biggest one that decodes, rotated by the RAW's EXIF orientation.
+ */
+async function decodeRawPreview(file: Blob): Promise<ImageBitmap> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const starts: number[] = [];
+  for (let i = 0; i < bytes.length - 3; i++) {
+    // SOI followed by an APPn, DQT or SOF marker
+    if (bytes[i] === 0xff && bytes[i + 1] === 0xd8 && bytes[i + 2] === 0xff && ((bytes[i + 3] & 0xf0) === 0xe0 || bytes[i + 3] === 0xdb || bytes[i + 3] === 0xc4)) {
+      starts.push(i);
+    }
+  }
+  const candidates = starts
+    .map((start, i) => ({ start, length: (starts[i + 1] ?? bytes.length) - start }))
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 4);
+  let best: ImageBitmap | null = null;
+  for (const { start, length } of candidates) {
+    try {
+      const image = await createImageBitmap(new Blob([bytes.subarray(start, start + length)], { type: "image/jpeg" }));
+      if (!best || image.width * image.height > best.width * best.height) {
+        best?.close();
+        best = image;
+      } else image.close();
+    } catch {
+      // not a complete JPEG; try the next one
+    }
+  }
+  if (!best) throw new Error("No preview image found in this RAW file");
+  const exifr = (await import("exifr")).default;
+  const tags = await exifr.parse(file, { pick: ["Orientation"], translateValues: false }).catch(() => null);
+  const orientation = tags?.Orientation;
+  const turns = typeof orientation === "number" ? ({ 3: 2, 6: 1, 8: 3 } as Record<number, number>)[orientation] ?? 0 : 0;
+  if (!turns) return best;
+  const swap = turns % 2 === 1;
+  const canvas = document.createElement("canvas");
+  canvas.width = swap ? best.height : best.width;
+  canvas.height = swap ? best.width : best.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((turns * Math.PI) / 2);
+  ctx.drawImage(best, -best.width / 2, -best.height / 2);
+  best.close();
+  return createImageBitmap(canvas);
+}
+
 /** Decodes any supported image, applying its EXIF rotation */
 export async function decodeImage(file: Blob & { name?: string }): Promise<ImageBitmap> {
   const kind = await sniff(file);
@@ -96,9 +189,13 @@ export async function decodeImage(file: Blob & { name?: string }): Promise<Image
     }
     if (kind === "tiff") return await decodeTiff(file);
     if (kind === "svg") return await decodeSvg(file);
+    if (kind === "psd") return await decodePsd(file);
+    if (kind === "jxl") return await decodeJxl(file);
+    if (kind === "raw") return await decodeRawPreview(file);
     return await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    throw new Error(`Couldn't open ${file.name || "this image"}. It may be damaged or in a format this browser can't read.`);
+  } catch (e) {
+    const detail = (kind === "psd" || kind === "raw") && e instanceof Error ? ` (${e.message})` : "";
+    throw new Error(`Couldn't open ${file.name || "this image"}. It may be damaged or in a format this browser can't read${detail}.`);
   }
 }
 
@@ -228,6 +325,10 @@ export async function encodeCanvas(canvas: HTMLCanvasElement, format: ExportForm
     case "avif": {
       const encode = (await import("@jsquash/avif/encode")).default;
       return new Blob([await encode(pixels(canvas), { quality: Math.round(quality * 100) })], { type: "image/avif" });
+    }
+    case "jxl": {
+      const encode = (await import("@jsquash/jxl/encode")).default;
+      return new Blob([await encode(pixels(canvas), { quality: Math.round(quality * 100) })], { type: "image/jxl" });
     }
     case "gif":
       return encodeGif(pixels(canvas));
