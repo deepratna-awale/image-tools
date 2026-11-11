@@ -28,6 +28,8 @@ ARG AI_SHIELD_VAES="stabilityai/sd-vae-ft-mse:sd-vae-ft-mse stabilityai/sdxl-vae
 # Upscaler: Real-ESRGAN photo and anime models (BSD-3-Clause) and the CLIP model that picks
 # between them (open_clip ViT-B-32 trained on LAION-400M, MIT), as url=filename
 ARG UPSCALE_MODELS="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
+# Object eraser: Big LaMa (Apache-2.0), TorchScript build
+ARG ERASER_MODEL_URL=https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt
 # The build args reach the script as environment variables (same names)
 COPY deployment/fetch_models.py deployment/fetch_models.py
 RUN python deployment/fetch_models.py \

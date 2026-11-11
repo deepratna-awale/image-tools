@@ -27,6 +27,7 @@
 | [Sky Swap](https://imagetools.top/sky-swap) | Replace a dull sky with a sunset, golden hour or a sky of your own. |
 | [Image Upscaler](https://imagetools.top/upscaler) | Enlarge up to 4× (any factor, like 1.5×) or to an exact size, cropping to fit. Detects anime/art vs. photos and uses the matching Real-ESRGAN model. |
 | [Watermark Remover](https://imagetools.top/watermark-remover) | Florence-2 finds watermarks, logos and text, and FLUX.1 Kontext edits them out. Fix the marked area with a brush first if you like. |
+| [Object Eraser](https://imagetools.top/object-eraser) | Paint over people, wires, spots or text and Big LaMa fills the space from the background around it. Runs on the server's CPU in a few seconds. |
 | [Outpainting](https://imagetools.top/outpainting) | Zoom out or reshape a photo (16:9, square, portrait...) and FLUX.1 Kontext paints in what lies beyond its edges, optionally guided by a description. The original pixels are kept as they are. |
 
 ### Convert
@@ -66,6 +67,7 @@
 | --- | --- |
 | [Remove Photo Metadata](https://imagetools.top/remove-metadata) | Strip GPS location, camera details and other EXIF/XMP data without re-encoding. |
 | [Blur & Pixelate](https://imagetools.top/censor) | Hide faces, names or number plates with pixelation, blur or a solid box. |
+| [Face Blur](https://imagetools.top/face-blur) | Finds every face (MediaPipe face detection, in the browser, tiled so small faces in group photos are found too) and blurs or pixelates them. Fix the result by hand. |
 | [Prompt Reader](https://imagetools.top/prompt-reader) | See the prompt, seed, model and settings saved in Stable Diffusion images (AUTOMATIC1111/Forge, ComfyUI, Fooocus, InvokeAI, NovelAI). |
 | [AI Shield](https://imagetools.top/ai-shield) | Cloak art against Stable Diffusion mimicry and img2img (an encoder attack in the style of PhotoGuard and Mist, aimed at the SD 1.x/2.x and SDXL VAEs, run on the CPU) and tag files as not for AI training (IPTC Data Mining, TDMRep, `noai`). |
 
@@ -73,11 +75,12 @@
 
 | Tool | What it does |
 | --- | --- |
+| [Image to Text](https://imagetools.top/image-to-text) | Text recognition (Tesseract) in 12 languages, in the browser. Copy the text, save it as a .txt or download a searchable PDF. |
 | [Color Picker & Palette](https://imagetools.top/color-palette) | Pick colours from an image and pull out its main palette as HEX, RGB, HSL, CSS or PNG. |
 | [Compare Images](https://imagetools.top/compare) | Before/after slider, side by side, or a difference view with the share of changed pixels and PSNR. |
 | [Image to Base64](https://imagetools.top/base64) | Data URIs with HTML/CSS/Markdown snippets, and Base64 back to an image file. |
 
-Every Convert, Edit, Create and Utilities tool, plus Blur & Pixelate, Remove Metadata and Prompt Reader, runs entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
+Every Convert, Edit, Create and Utilities tool, plus Blur & Pixelate, Face Blur, Remove Metadata and Prompt Reader, runs entirely in your browser, so those files never leave your device. The AI tools run on the server's CPU; no paid APIs are involved.
 
 ## Developer API
 
@@ -187,6 +190,8 @@ The frontend needs `BACKEND_URL` (default `http://localhost:8000`). API key limi
 
 The sky-swap model (SegFormer-b0 fine-tuned on ADE20K) is under NVIDIA's non-commercial licence. Point `SKY_MODEL_URL` (a build arg in `backend/deployment/docker/Dockerfile`) at a commercially licensed model before running the site commercially.
 
+The object eraser uses Big LaMa (Apache-2.0); face detection uses MediaPipe's BlazeFace (Apache-2.0) and text recognition Tesseract (Apache-2.0), both served by the site itself.
+
 The background-removal model (BRIA RMBG 2.0) is under CC BY-NC 4.0, also non-commercial. Set the `REMBG_MODEL` build arg and env var to `isnet-general-use` or `birefnet-general` for a permissive alternative.
 
 ## Project structure
@@ -230,7 +235,8 @@ Browser-only tools skip steps 1 and 2.
 - [x] Public API with self-serve keys
 - [x] Outpainting
 - [ ] Shared job state (Redis) so the API and worker can scale out
-- [ ] More tools: face blur, colorizer, OCR
+- [x] Face blur, image to text (OCR) and object eraser
+- [ ] More tools: restore and colorize old photos, captions, denoise
 
 ## License
 

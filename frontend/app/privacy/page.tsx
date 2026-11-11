@@ -16,8 +16,9 @@ export default function PrivacyPage() {
 
       <h2>Tools that run in your browser</h2>
       <p>
-        <strong>Resize, Compress &amp; Convert</strong>, <strong>Remove Photo Metadata</strong>,{" "}
-        <strong>Watermark &amp; Add Text</strong> and <strong>Images to PDF</strong> work entirely on your device. Your
+        Every Convert, Edit, Create and Utilities tool (including <strong>Image to Text</strong>), plus{" "}
+        <strong>Blur &amp; Pixelate</strong>, <strong>Face Blur</strong> and <strong>Remove Photo Metadata</strong>, work
+        entirely on your device. Your
         images are never sent to our server.
       </p>
 
@@ -25,7 +26,8 @@ export default function PrivacyPage() {
       <p>
         <strong>Background Remover</strong>, <strong>Background Changer</strong>, <strong>Blur Background</strong>,{" "}
         <strong>Passport &amp; ID Photo</strong>, <strong>Sky Swap</strong>, <strong>Image Upscaler</strong>,{" "}
-        <strong>Watermark Remover</strong>, <strong>Outpainting</strong>, <strong>AI Shield</strong> and <strong>Prompt Reader</strong> send your image to our server to be processed.
+        <strong>Watermark Remover</strong>, <strong>Object Eraser</strong>, <strong>Outpainting</strong>,{" "}
+        <strong>AI Shield</strong> and <strong>Prompt Reader</strong> send your image to our server to be processed.
       </p>
       <ul>
         <li>

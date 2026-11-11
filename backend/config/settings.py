@@ -131,6 +131,15 @@ class Settings(BaseSettings):
     outpaint_work_pixels: int = 1024 * 1024
     outpaint_steps: int = 28
     outpaint_max_output_pixels: int = 4096 * 4096
+    # Object eraser (CPU): Big LaMa (Apache-2.0) as TorchScript. The Docker image bakes
+    # it into U2NET_HOME; a worker run by hand downloads it on the first job. Each painted
+    # area is cropped with context and filled at most this many pixels on its longer side
+    eraser_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "big-lama.pt"
+    )
+    eraser_model_url: str = "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt"
+    eraser_work_size: int = 1024
+    eraser_max_input_pixels: int = 6000 * 6000
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
     # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),

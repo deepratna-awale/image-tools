@@ -14,6 +14,7 @@ class ServiceType(str, Enum):
     UPSCALING = "upscaling"
     WATERMARK_REMOVAL = "watermark_removal"
     OUTPAINTING = "outpainting"
+    OBJECT_REMOVAL = "object_removal"
 
 
 class JobStatus(str, Enum):
