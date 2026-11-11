@@ -82,20 +82,25 @@ Browser ──► Next.js frontend ──► FastAPI API ──► RabbitMQ ─�
 
 ## Run it yourself
 
-### Docker (everything)
+With Docker installed, one command builds and starts the whole site on your machine:
 
 ```bash
-cp .env.example .env      # set RABBITMQ_DEFAULT_PASS
-docker compose up -d --build
+git clone https://github.com/deepratna-awale/image-tools.git && cd image-tools
+./deploy/local/setup.sh
 ```
 
-This starts the frontend on http://localhost:3000 plus the API, worker and RabbitMQ. Check it with `docker compose ps` and `curl localhost:3000/api/health`.
+Then open http://localhost:3000. Everything runs on your CPU with no accounts or paid APIs; the first build downloads about 2 GB of models and takes 10 to 20 minutes. A RunPod Serverless GPU is optional: it speeds up the AI tools and is needed for the Watermark Remover and Outpainting.
+
+**[docs/SELF_HOSTING.md](./docs/SELF_HOSTING.md)** covers requirements, which tools run where, every setting, the models and their licences, the optional GPU, calling the API locally, updating, HTTPS and troubleshooting.
 
 ### Local development
 
 Needs Python 3.11+, Node.js 18+, pnpm and a running RabbitMQ.
 
 ```bash
+# Once: download the models outside Docker (into ~/.u2net)
+cd backend && pip install -r requirements/dev.txt && python deployment/fetch_models.py
+
 # API
 cd backend && cp .env.example .env && ./start.sh
 
@@ -134,7 +139,7 @@ The `api` and `worker` share job files and status through the `storage` volume, 
 
 ### Configuration
 
-Key variables in `backend/.env`:
+Key variables in `backend/.env` (for Docker, the root `.env`; the full list is in [docs/SELF_HOSTING.md](./docs/SELF_HOSTING.md#configuration)):
 
 ```env
 API_PREFIX=/api/v1
@@ -142,7 +147,7 @@ QUEUE_TYPE=rabbitmq
 RABBITMQ_URL=amqp://guest:guest@localhost/
 STORAGE_TYPE=local            # or s3, with S3_BUCKET_NAME and AWS credentials
 LOCAL_STORAGE_PATH=./uploads
-MAX_FILE_SIZE_MB=50
+MAX_FILE_SIZE=10485760       # bytes (10 MB)
 ```
 
 The frontend needs `BACKEND_URL` (default `http://localhost:8000`). API key limits and the admin token for `/api-keys` are covered in [docs/API.md](./docs/API.md#server-setup).
@@ -179,6 +184,7 @@ Browser-only tools skip steps 1 and 2.
 
 ## More docs
 
+- [Self-hosting guide](./docs/SELF_HOSTING.md)
 - [Public background removal API](./docs/API.md)
 - [Backend architecture](./backend/ARCHITECTURE.md)
 - [Backend testing](./backend/TESTING_DOCUMENTATION.md)

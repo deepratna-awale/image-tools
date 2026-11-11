@@ -15,6 +15,10 @@ x-backend: &backend
     context: ./backend
     dockerfile: deployment/docker/Dockerfile
     target: production
+    # Models baked into the image; change them in .env and rebuild (docs/SELF_HOSTING.md)
+    args:
+      REMBG_MODEL: ${REMBG_MODEL:-bria-rmbg}
+      SKY_MODEL_URL: ${SKY_MODEL_URL:-}
   image: image-tools-backend:latest
   restart: unless-stopped
   # RabbitMQ credentials (RABBITMQ_DEFAULT_USER / RABBITMQ_DEFAULT_PASS) come from .env
