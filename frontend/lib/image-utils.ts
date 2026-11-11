@@ -54,7 +54,34 @@ export async function setJpegDpi(jpeg: Blob, dpi: number): Promise<Blob> {
   return new Blob([bytes], { type: "image/jpeg" });
 }
 
+let capture: ((file: File) => void) | null = null;
+
+/**
+ * Runs a tool's own download code but hands back the file it would have saved, so the
+ * result can be opened in another tool without the tool needing separate code for it
+ */
+export async function captureDownload(save: () => unknown | Promise<unknown>): Promise<File> {
+  const file = new Promise<File>((resolve) => (capture = resolve));
+  try {
+    await save();
+  } catch (e) {
+    capture = null;
+    throw e;
+  }
+  if (capture) {
+    capture = null;
+    throw new Error("There's no result to send yet");
+  }
+  return file;
+}
+
 export function downloadBlob(blob: Blob, filename: string) {
+  if (capture) {
+    // "Open in another tool" asked for this file instead of a download
+    capture(new File([blob], filename, { type: blob.type }));
+    capture = null;
+    return;
+  }
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -65,6 +92,8 @@ export function downloadBlob(blob: Blob, filename: string) {
 
 /** Zips files in the browser and downloads the archive */
 export async function downloadZip(files: { name: string; blob: Blob }[], zipName: string) {
+  // Sending on to another tool takes the first image rather than an archive
+  if (capture && files.length) return downloadBlob(files[0].blob, files[0].name);
   const { zipSync } = await import("fflate");
   const entries: Record<string, [Uint8Array, { level: 0 }]> = {};
   for (const { name, blob } of files) {
