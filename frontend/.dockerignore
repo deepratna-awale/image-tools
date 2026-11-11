@@ -38,6 +38,7 @@ logs/
 # Uploads (if any)
 public/uploads/
 public/results/
+public/vendor/
 
 # Temporary files
 temp/

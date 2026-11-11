@@ -12,6 +12,7 @@ variables (the Dockerfile's build args), with the same defaults:
     SKY_MODEL_URL    ADE20K segmentation ONNX for sky swap (SegFormer-b0)
     AI_SHIELD_VAES   "hf-repo:folder" pairs of Stable Diffusion VAEs for AI Shield
     UPSCALE_MODELS   "url=filename" pairs: Real-ESRGAN photo/anime and the CLIP picker
+    ERASER_MODEL_URL Big LaMa TorchScript model for the object eraser
 
 The GPU-only models (Florence-2, FLUX.1 Kontext, SDXL Inpainting) are fetched by
 deployment/gpu/fetch_watermark_models.py for the GPU image instead.
@@ -34,6 +35,9 @@ UPSCALE_MODELS = os.environ.get("UPSCALE_MODELS") or (
     "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth=RealESRGAN_x4plus.pth "
     "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth=RealESRGAN_x4plus_anime_6B.pth "
     "https://github.com/mlfoundations/open_clip/releases/download/v0.2-weights/vit_b_32-quickgelu-laion400m_e32-46683a32.pt=clip-vit-b-32-laion400m.pt"
+)
+ERASER_MODEL_URL = os.environ.get("ERASER_MODEL_URL") or (
+    "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt"
 )
 
 
@@ -67,6 +71,8 @@ def main() -> None:
     for model in UPSCALE_MODELS.split():
         url, name = model.rsplit("=", 1)
         download(url, os.path.join(MODELS_DIR, name))
+
+    download(ERASER_MODEL_URL, os.path.join(MODELS_DIR, "big-lama.pt"))
 
     print(f"Models ready in {MODELS_DIR}")
 

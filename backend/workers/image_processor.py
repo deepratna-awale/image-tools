@@ -17,6 +17,7 @@ from services.ai_shield.service import AIShieldService
 from services.upscaling.service import UpscalingService
 from services.watermark_removal.service import WatermarkRemovalService
 from services.outpainting.service import OutpaintingService
+from services.object_removal.service import ObjectRemovalService
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -41,11 +42,14 @@ class ImageProcessorWorker:
             ServiceType.UPSCALING: UpscalingService(),
             ServiceType.WATERMARK_REMOVAL: WatermarkRemovalService(),
             ServiceType.OUTPAINTING: OutpaintingService(),
+            ServiceType.OBJECT_REMOVAL: ObjectRemovalService(),
         }
 
         # Model work goes to the GPU endpoint when one is configured
         if settings.gpu_enabled:
             for service_type, service in self.services.items():
+                if getattr(service.processor, "cpu_only", False):
+                    continue
                 if isinstance(service.processor, AnimatedProcessor):
                     # Frames go to the GPU one by one (its handler cuts out still images)
                     service.processor.inner = GpuProcessor(service_type.value, service.processor.inner)

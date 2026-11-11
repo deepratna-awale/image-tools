@@ -69,3 +69,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# copied from node_modules by scripts/copy-vendor-assets.mjs
+/public/vendor/

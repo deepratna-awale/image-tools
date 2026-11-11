@@ -11,6 +11,8 @@ import {
   Laugh,
   LayoutGrid,
   Pipette,
+  ScanFace,
+  ScanText,
   FileImage,
   Film,
   Globe,
@@ -30,6 +32,7 @@ import {
   ShieldHalf,
   Stamp,
   Sunset,
+  WandSparkles,
 } from "lucide-react";
 
 export type ToolCategory = "convert" | "edit" | "create" | "ai" | "privacy" | "utility";
@@ -56,7 +59,7 @@ export const CATEGORIES: { id: ToolCategory; name: string; description: string }
     name: "Privacy & Metadata",
     description: "See or remove what's hidden inside an image file, and keep your work out of AI training.",
   },
-  { id: "utility", name: "Utilities", description: "Pick colours, compare images and turn them into code." },
+  { id: "utility", name: "Utilities", description: "Copy text out of images, pick colours, compare images and turn them into code." },
 ];
 
 /** Every tool on the site, in the order the home page and menus show them */
@@ -107,6 +110,14 @@ export const TOOLS: Tool[] = [
     description: "AI finds watermarks, logos and text, then repaints the photo as if they were never there.",
     image: "/tiles/watermark-remover.webp",
     icon: BrushCleaning,
+    category: "ai",
+  },
+  {
+    href: "/object-eraser",
+    name: "Object Eraser",
+    description: "Paint over people, wires, spots or text and they vanish, filled in from the background.",
+    image: "/tiles/object-eraser.webp",
+    icon: WandSparkles,
     category: "ai",
   },
   {
@@ -238,6 +249,14 @@ export const TOOLS: Tool[] = [
     category: "privacy",
   },
   {
+    href: "/face-blur",
+    name: "Face Blur",
+    description: "Find every face in a photo automatically and blur or pixelate them in one go.",
+    image: "/tiles/face-blur.webp",
+    icon: ScanFace,
+    category: "privacy",
+  },
+  {
     href: "/prompt-reader",
     name: "Prompt Reader",
     description: "See the prompt, seed, model and settings saved inside a Stable Diffusion image.",
@@ -276,6 +295,14 @@ export const TOOLS: Tool[] = [
     image: "/tiles/meme.webp",
     icon: Laugh,
     category: "create",
+  },
+  {
+    href: "/image-to-text",
+    name: "Image to Text",
+    description: "Copy the text out of a photo, scan or screenshot, in 12 languages. Save it as text or a searchable PDF.",
+    image: "/tiles/image-to-text.webp",
+    icon: ScanText,
+    category: "utility",
   },
   {
     href: "/color-palette",
