@@ -5,6 +5,12 @@ import {
   Frame,
   SlidersHorizontal,
   Eraser,
+  Binary,
+  Columns2,
+  Grid3x3,
+  Laugh,
+  LayoutGrid,
+  Pipette,
   FileImage,
   Film,
   Globe,
@@ -26,7 +32,7 @@ import {
   Sunset,
 } from "lucide-react";
 
-export type ToolCategory = "convert" | "edit" | "ai" | "privacy";
+export type ToolCategory = "convert" | "edit" | "create" | "ai" | "privacy" | "utility";
 
 export interface Tool {
   href: string;
@@ -43,12 +49,14 @@ export interface Tool {
 export const CATEGORIES: { id: ToolCategory; name: string; description: string }[] = [
   { id: "convert", name: "Convert", description: "Change formats, shrink files, and turn images into PDFs, GIFs, vectors or icons." },
   { id: "edit", name: "Edit", description: "Crop, adjust, frame and prepare images for wherever they're going." },
+  { id: "create", name: "Create", description: "Collages, Instagram grids and memes from your own photos." },
   { id: "ai", name: "Backgrounds & AI", description: "Cut out, replace or restyle what's behind your subject." },
   {
     id: "privacy",
     name: "Privacy & Metadata",
     description: "See or remove what's hidden inside an image file, and keep your work out of AI training.",
   },
+  { id: "utility", name: "Utilities", description: "Pick colours, compare images and turn them into code." },
 ];
 
 /** Every tool on the site, in the order the home page and menus show them */
@@ -244,6 +252,54 @@ export const TOOLS: Tool[] = [
     image: "/tiles/ai-shield.webp",
     icon: ShieldHalf,
     category: "privacy",
+  },
+  {
+    href: "/collage",
+    name: "Collage Maker",
+    description: "Photo collages from grid layouts, or images stitched side by side or top to bottom.",
+    image: "/tiles/collage.webp",
+    icon: LayoutGrid,
+    category: "create",
+  },
+  {
+    href: "/split-image",
+    name: "Split Image",
+    description: "Cut one picture into tiles for an Instagram grid or a seamless carousel.",
+    image: "/tiles/split-image.webp",
+    icon: Grid3x3,
+    category: "create",
+  },
+  {
+    href: "/meme",
+    name: "Meme Generator",
+    description: "Top and bottom text or a caption bar on your own picture, with no watermark.",
+    image: "/tiles/meme.webp",
+    icon: Laugh,
+    category: "create",
+  },
+  {
+    href: "/color-palette",
+    name: "Color Picker & Palette",
+    description: "Pick any colour from an image or pull out its main palette as HEX, RGB and HSL.",
+    image: "/tiles/color-palette.webp",
+    icon: Pipette,
+    category: "utility",
+  },
+  {
+    href: "/compare",
+    name: "Compare Images",
+    description: "Before/after slider, side by side, or a view that lights up every difference.",
+    image: "/tiles/compare.webp",
+    icon: Columns2,
+    category: "utility",
+  },
+  {
+    href: "/base64",
+    name: "Image to Base64",
+    description: "Encode an image as a data URI for HTML or CSS, or decode Base64 back to a file.",
+    image: "/tiles/base64.webp",
+    icon: Binary,
+    category: "utility",
   },
 ];
 

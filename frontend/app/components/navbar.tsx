@@ -62,7 +62,7 @@ export function Navbar() {
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <Logo />
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center gap-1 lg:flex">
           {groups.map(({ id, name, tools }) => {
             const active = tools.some((tool) => tool.href === pathname);
             return (
@@ -90,11 +90,11 @@ export function Navbar() {
           <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="rounded-full md:hidden" aria-label="Open menu">
+              <Button variant="outline" size="icon" className="rounded-full lg:hidden" aria-label="Open menu">
                 <Menu className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="end" className="w-64 max-h-[80vh] overflow-y-auto">
               {groups.map(({ id, name, tools }, i) => (
                 <DropdownMenuGroup key={id}>
                   {i > 0 && <DropdownMenuSeparator />}
