@@ -33,6 +33,8 @@ import {
   Stamp,
   Sunset,
   WandSparkles,
+  History,
+  Palette,
 } from "lucide-react";
 
 export type ToolCategory = "convert" | "edit" | "create" | "ai" | "privacy" | "utility";
@@ -118,6 +120,22 @@ export const TOOLS: Tool[] = [
     description: "Paint over people, wires, spots or text and they vanish, filled in from the background.",
     image: "/tiles/object-eraser.webp",
     icon: WandSparkles,
+    category: "ai",
+  },
+  {
+    href: "/photo-restorer",
+    name: "Old Photo Restorer",
+    description: "Sharpen blurry, faded faces in old photos and colour black and white ones.",
+    image: "/tiles/photo-restorer.webp",
+    icon: History,
+    category: "ai",
+  },
+  {
+    href: "/colorize",
+    name: "Colorize Photo",
+    description: "Turn black and white or sepia photos into colour with AI.",
+    image: "/tiles/colorize.webp",
+    icon: Palette,
     category: "ai",
   },
   {

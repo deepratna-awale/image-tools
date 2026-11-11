@@ -140,6 +140,26 @@ class Settings(BaseSettings):
     eraser_model_url: str = "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt"
     eraser_work_size: int = 1024
     eraser_max_input_pixels: int = 6000 * 6000
+    # Old photo restorer (CPU): YuNet (MIT) finds faces, GFPGAN v1.4 (Apache-2.0) redraws
+    # them, and DDColor (Apache-2.0, the paper's tiny model) colours black and white
+    # photos. The Docker image bakes all three into U2NET_HOME; a worker run by hand
+    # downloads them on first use
+    restore_face_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "GFPGANv1.4.pth"
+    )
+    restore_face_model_url: str = "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth"
+    restore_face_detector_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "face_detection_yunet_2023mar.onnx"
+    )
+    restore_face_detector_url: str = (
+        "https://media.githubusercontent.com/media/opencv/opencv_zoo/main/models/"
+        "face_detection_yunet/face_detection_yunet_2023mar.onnx"
+    )
+    colorize_model_repo: str = "piddnad/ddcolor_paper_tiny"
+    colorize_model_path: str = os.path.join(
+        os.environ.get("U2NET_HOME", os.path.expanduser("~/.u2net")), "ddcolor-paper-tiny"
+    )
+    restore_max_input_pixels: int = 4096 * 4096
 
     # GPU offload: with both set, the worker sends model work (cutouts, sky masks,
     # AI Shield) to this RunPod Serverless endpoint (see deployment/gpu/README.md),

@@ -1,7 +1,8 @@
 """API key check and rate limits for requests from other apps.
 
 Caddy forwards /api/v1/background-removal/*, /api/v1/upscaling/*,
-/api/v1/watermark-removal/*, /api/v1/outpainting/* and /api/v1/object-removal/* from the public site straight to the API and marks
+/api/v1/watermark-removal/*, /api/v1/outpainting/*, /api/v1/object-removal/* and
+/api/v1/photo-restoration/* from the public site straight to the API and marks
 those requests with PUBLIC_API_HEADER. Requests without the mark come from the
 site's own frontend over the internal network and pass through unchanged; the API port itself is never published.
 

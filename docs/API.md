@@ -3,7 +3,8 @@
 Other apps can remove image backgrounds through the same service the site uses, and
 enlarge images with the upscaler ([Upscaling](#upscaling)), remove watermarks
 ([Watermark removal](#watermark-removal)), extend photos past their edges
-([Outpainting](#outpainting)) and erase objects ([Object removal](#object-removal)).
+([Outpainting](#outpainting)) erase objects ([Object removal](#object-removal)) and restore or colorize old photos
+([Photo restoration](#photo-restoration)).
 
 - **Base URL:** `https://imagetools.top/api/v1/background-removal`
 - **Auth:** an API key in the `X-API-Key` header (or `Authorization: Bearer <key>`).
@@ -256,6 +257,31 @@ API=https://imagetools.top/api/v1/object-removal
 JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@photo.jpg" -F "mask=@mask.png" $API/process | jq -r .job_id)
 until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 2; done
 curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o erased.png
+```
+
+## Photo restoration
+
+**`https://imagetools.top/api/v1/photo-restoration`** takes the same keys, limits and job
+flow. GFPGAN redraws blurry or damaged faces and DDColor colours black and white photos.
+The result is a PNG at the original size (transparency is kept). It runs on the server's
+CPU and takes a few seconds per photo.
+
+Form fields for `POST /process` and `POST /process-batch`, besides `file`/`files`:
+
+| Field | What it does |
+| --- | --- |
+| `faces` | `true` (default) or `false`: restore faces. |
+| `strength` | 0 to 1 (default 1): how far restored faces move from the original. |
+| `colorize` | `auto` (default: only black and white or toned photos), `yes` or `no`. |
+
+A job with nothing to do (no faces found and no colouring) fails with `No faces found to
+restore`. Images can be up to 16.7 megapixels.
+
+```bash
+API=https://imagetools.top/api/v1/photo-restoration
+JOB=$(curl -s -H "X-API-Key: $KEY" -F "file=@grandma.jpg" -F "strength=0.8" $API/process | jq -r .job_id)
+until [ "$(curl -s -H "X-API-Key: $KEY" $API/status/$JOB | jq -r .status)" = completed ]; do sleep 2; done
+curl -s -H "X-API-Key: $KEY" $API/result/$JOB -o restored.png
 ```
 
 ## Calling from a browser
