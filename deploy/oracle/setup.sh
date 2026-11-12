@@ -52,7 +52,27 @@ if ! grep -q '^ADMIN_TOKEN=.' .env; then
     echo "Added ADMIN_TOKEN to .env for the /api-keys page (read it with: grep ADMIN_TOKEN .env)"
 fi
 
-sudo docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
+# The VM has 12 GB and no swap by default; building the worker image (PyTorch plus the
+# models) next to the running site can use all of it and freeze the VM. Keep 8 GB of
+# swap as headroom.
+if [ "$(swapon --show=SIZE --bytes --noheadings | awk '{s+=$1} END {print s+0}')" -lt 4000000000 ]; then
+    echo "Adding an 8 GB swap file..."
+    if [ ! -f /swapfile ]; then
+        sudo fallocate -l 8G /swapfile
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile >/dev/null
+    fi
+    sudo swapon /swapfile 2>/dev/null || true
+    grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+fi
+
+compose() { sudo docker compose -f docker-compose.yml -f docker-compose.https.yml "$@"; }
+
+# Build one image at a time (the API and worker share one backend image) while the
+# old containers keep serving, then swap them over.
+compose build api
+compose build frontend
+compose up -d
 
 site="$(grep '^SITE_ADDRESS=' .env | cut -d= -f2-)"
 echo
