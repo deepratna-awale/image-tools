@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Brush, Eraser, Trash2, Undo2 } from "lucide-react";
+import { Brush, Eraser, Trash2 } from "lucide-react";
 import DropZone from "../components/drop-zone";
 import ToolHeader from "../components/tool-header";
 import ToolResult from "../components/tool-result";
@@ -9,6 +9,7 @@ import { useToolJob } from "../components/use-tool-job";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { baseName, canvasToBlob, createCanvas, loadImage } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
 
 // Paint over what to remove; the server fills it in from the background around it.
 // Shown at half opacity over the photo; only where the mask is painted matters
@@ -26,11 +27,13 @@ export default function ObjectEraserPage() {
   const [note, setNote] = useState("");
   const [painted, setPainted] = useState(false);
   const [undoCount, setUndoCount] = useState(0);
+  const [redoCount, setRedoCount] = useState(0);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   // The image the latest result belongs to
   const [submitted, setSubmitted] = useState<File | null>(null);
   const maskRef = useRef<HTMLCanvasElement>(null);
   const undoStack = useRef<ImageData[]>([]);
+  const redoStack = useRef<ImageData[]>([]);
   const stroke = useRef<{ x: number; y: number } | null>(null);
   const { run, isProcessing, status, error, resultUrl, jobId } = useToolJob("object-removal");
 
@@ -39,7 +42,9 @@ export default function ObjectEraserPage() {
     setNote("");
     setPainted(false);
     undoStack.current = [];
+    redoStack.current = [];
     setUndoCount(0);
+    setRedoCount(0);
     if (!image) return;
     const url = URL.createObjectURL(image);
     setImageUrl(url);
@@ -73,14 +78,28 @@ export default function ObjectEraserPage() {
     if (!canvas || !ctx) return;
     undoStack.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
     if (undoStack.current.length > MAX_UNDO) undoStack.current.shift();
+    redoStack.current = [];
     setUndoCount(undoStack.current.length);
+    setRedoCount(0);
   };
 
-  const undo = () => {
-    const data = undoStack.current.pop();
-    if (data) context()?.putImageData(data, 0, 0);
+  /** Swaps the mask for the newest snapshot in one stack, keeping the current mask in the other */
+  const step = (from: ImageData[], to: ImageData[]) => {
+    const canvas = maskRef.current;
+    const ctx = context();
+    const data = from.pop();
+    if (!canvas || !ctx || !data) return;
+    to.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    ctx.putImageData(data, 0, 0);
+    // Only the brush paints opaque pixels, so any alpha means there is something to remove
+    let any = false;
+    for (let i = 3; i < data.data.length && !any; i += 4) any = data.data[i] > 0;
+    setPainted(any);
     setUndoCount(undoStack.current.length);
+    setRedoCount(redoStack.current.length);
   };
+  const undo = () => step(undoStack.current, redoStack.current);
+  const redo = () => step(redoStack.current, undoStack.current);
 
   const clear = () => {
     const canvas = maskRef.current;
@@ -206,9 +225,7 @@ export default function ObjectEraserPage() {
                 />
               </label>
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={undo} disabled={undoCount === 0} aria-label="Undo">
-                  <Undo2 className="size-4" />
-                </Button>
+                <UndoRedo canUndo={undoCount > 0} canRedo={redoCount > 0} undo={undo} redo={redo} />
                 <Button variant="ghost" size="sm" onClick={clear} aria-label="Clear the mask">
                   <Trash2 className="size-4" />
                 </Button>

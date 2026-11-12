@@ -12,6 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Adjustments, NEUTRAL, PRESETS, applyAdjustments } from "@/lib/adjust";
 import { ExportFormat, IMAGE_ACCEPT, encodeCanvas, sameFormat } from "@/lib/formats";
 import { baseName, createCanvas, downloadBlob, downloadZip, loadImage } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type FormatChoice = "original" | ExportFormat;
 
@@ -35,8 +37,8 @@ const SLIDERS: { key: keyof Adjustments; label: string; min: number; max: number
 export default function AdjustPage() {
   const [files, setFiles] = useState<File[]>([]);
   const { bitmap, error: loadError } = useBitmap(files[0]);
-  const [values, setValues] = useState<Adjustments>(NEUTRAL);
-  const [preset, setPreset] = useState("Original");
+  const history = useHistory({ values: NEUTRAL, preset: "Original" });
+  const { values, preset } = history.value;
   const [comparing, setComparing] = useState(false);
   const [format, setFormat] = useState<FormatChoice>("original");
   const [isWorking, setIsWorking] = useState(false);
@@ -67,8 +69,7 @@ export default function AdjustPage() {
   }, [values, comparing, bitmap]);
 
   const set = (key: keyof Adjustments, value: number | boolean) => {
-    setPreset("");
-    setValues((current) => ({ ...current, [key]: value }));
+    history.set((current) => ({ preset: "", values: { ...current.values, [key]: value } }), key);
   };
 
   const render = async (file: File) => {
@@ -127,6 +128,7 @@ export default function AdjustPage() {
 
           <Card>
             <CardContent className="p-5 flex flex-col gap-4">
+              <UndoRedo {...history} />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Filters</span>
                 <div className="flex flex-wrap gap-2">
@@ -135,10 +137,7 @@ export default function AdjustPage() {
                       key={option.name}
                       size="sm"
                       variant={preset === option.name ? "default" : "outline"}
-                      onClick={() => {
-                        setPreset(option.name);
-                        setValues({ ...NEUTRAL, ...option.values });
-                      }}
+                      onClick={() => history.set({ preset: option.name, values: { ...NEUTRAL, ...option.values } })}
                     >
                       {option.name}
                     </Button>
@@ -164,7 +163,7 @@ export default function AdjustPage() {
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t">
                 <FormatSelect value={format} onChange={setFormat} extra={[{ value: "original", label: "Same as original" }]} />
-                <Button size="sm" variant="ghost" onClick={() => { setValues(NEUTRAL); setPreset("Original"); }}>
+                <Button size="sm" variant="ghost" onClick={() => history.set({ values: NEUTRAL, preset: "Original" })}>
                   Reset
                 </Button>
               </div>

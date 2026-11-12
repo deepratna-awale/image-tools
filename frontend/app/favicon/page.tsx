@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IMAGE_ACCEPT, encodeCanvas } from "@/lib/formats";
 import { createCanvas, downloadZip } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type Source = "image" | "text";
 
@@ -75,7 +77,7 @@ function drawIcon(size: number, design: Design, image: ImageBitmap | null, opaqu
 export default function FaviconPage() {
   const [file, setFile] = useState<File | null>(null);
   const { bitmap, error: loadError } = useBitmap(file);
-  const [design, setDesign] = useState<Design>({
+  const history = useHistory<Design>({
     source: "image",
     text: "A",
     textColor: "#ffffff",
@@ -84,12 +86,13 @@ export default function FaviconPage() {
     padding: 0,
     radius: 0,
   });
+  const design = history.value;
   const [appName, setAppName] = useState("My site");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const previews = useRef<(HTMLCanvasElement | null)[]>([]);
 
-  const update = (patch: Partial<Design>) => setDesign((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<Design>) => history.set((current) => ({ ...current, ...patch }), Object.keys(patch).join());
   const ready = design.source === "text" ? !!design.text : !!bitmap;
   const sizes = useMemo(() => [16, 32, 64, 180], []);
 
@@ -163,6 +166,7 @@ export default function FaviconPage() {
       <div className="mt-8 w-full max-w-4xl px-4 grid gap-6 md:grid-cols-2">
         <Card>
           <CardContent className="p-5 flex flex-col gap-4">
+            <UndoRedo {...history} />
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={design.transparent} onChange={(e) => update({ transparent: e.target.checked })} />
               Transparent background
