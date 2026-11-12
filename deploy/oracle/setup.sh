@@ -68,11 +68,23 @@ fi
 
 compose() { sudo docker compose -f docker-compose.yml -f docker-compose.https.yml "$@"; }
 
+# The models are baked into the backend image, so each rebuild needs room for a second
+# copy of it. Trim the build cache to its most recent 5 GB (enough to skip reinstalling
+# the Python packages when only code changed) and drop images nothing uses, so the
+# 45 GB disk doesn't fill up. Images of the running containers are kept.
+echo "Trimming Docker build cache and unused images..."
+sudo docker builder prune -f --max-used-space 5gb >/dev/null 2>&1 \
+    || sudo docker builder prune -f --keep-storage 5gb >/dev/null 2>&1 \
+    || sudo docker builder prune -af >/dev/null
+sudo docker image prune -f >/dev/null
+
 # Build one image at a time (the API and worker share one backend image) while the
 # old containers keep serving, then swap them over.
 compose build api
 compose build frontend
 compose up -d
+# Drop the images the new build replaced
+sudo docker image prune -f >/dev/null
 
 site="$(grep '^SITE_ADDRESS=' .env | cut -d= -f2-)"
 echo
