@@ -122,7 +122,15 @@ class Colorizer:
 
         spandrel_extra_arches.install(ignore_duplicates=True)
         self.device = _device()
-        self.descriptor = spandrel.ModelLoader().load_from_file(_fetch_colorizer())
+        path = _fetch_colorizer()
+        loader = spandrel.ModelLoader()
+        if path.endswith(".safetensors"):
+            self.descriptor = loader.load_from_file(path)
+        else:
+            # The Hugging Face repo ships pytorch_model.bin, an extension spandrel won't open
+            # by itself, so read the weights here and hand it the state dict
+            state_dict = torch.load(path, map_location="cpu", weights_only=True)
+            self.descriptor = loader.load_from_state_dict(state_dict)
         self.descriptor.model.eval().to(self.device)
 
     @torch.inference_mode()
