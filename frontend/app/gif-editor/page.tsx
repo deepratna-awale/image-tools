@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Frame, decodeGif, encodeGifAnimation, framesToVideo, resizeFrame } from "@/lib/gif";
 import { baseName, downloadBlob, downloadZip, formatBytes } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 interface Gif {
   width: number;
@@ -27,12 +29,12 @@ function frameToPng(image: ImageData): Promise<Blob> {
 export default function GifEditorPage() {
   const [file, setFile] = useState<File | null>(null);
   const [gif, setGif] = useState<Gif | null>(null);
-  const [scale, setScale] = useState(100);
-  const [speed, setSpeed] = useState(1);
-  const [reverse, setReverse] = useState(false);
-  const [boomerang, setBoomerang] = useState(false);
-  const [skip, setSkip] = useState(1);
-  const [loop, setLoop] = useState(true);
+  const history = useHistory({ scale: 100, speed: 1, reverse: false, boomerang: false, skip: 1, loop: true });
+  const { scale, speed, reverse, boomerang, skip, loop } = history.value;
+  const setOne =
+    <K extends keyof typeof history.value>(key: K) =>
+    (value: (typeof history.value)[K]) =>
+      history.set((current) => ({ ...current, [key]: value }), key);
   const [result, setResult] = useState<Blob | null>(null);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
@@ -118,22 +120,23 @@ export default function GifEditorPage() {
           </Card>
           <Card>
             <CardContent className="p-5 flex flex-col gap-4">
-              <Slider label="Size" min={10} max={200} step={5} unit="%" value={scale} onChange={setScale} />
-              <Slider label="Speed" min={0.25} max={4} step={0.25} unit="×" value={speed} onChange={setSpeed} />
-              <Slider label="Keep frames" min={1} max={4} value={skip} unit={skip === 1 ? " (all)" : ""} onChange={setSkip} />
+              <UndoRedo {...history} />
+              <Slider label="Size" min={10} max={200} step={5} unit="%" value={scale} onChange={setOne("scale")} />
+              <Slider label="Speed" min={0.25} max={4} step={0.25} unit="×" value={speed} onChange={setOne("speed")} />
+              <Slider label="Keep frames" min={1} max={4} value={skip} unit={skip === 1 ? " (all)" : ""} onChange={setOne("skip")} />
               <p className="-mt-2 text-xs text-muted-foreground">
                 {skip > 1 ? `Keeps 1 frame in ${skip}: a smaller file, choppier motion.` : "Drop frames to make the file smaller."}
               </p>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={reverse} onChange={(e) => setReverse(e.target.checked)} />
+                <input type="checkbox" checked={reverse} onChange={(e) => setOne("reverse")(e.target.checked)} />
                 Reverse
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={boomerang} onChange={(e) => setBoomerang(e.target.checked)} />
+                <input type="checkbox" checked={boomerang} onChange={(e) => setOne("boomerang")(e.target.checked)} />
                 Boomerang (forwards then backwards)
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
+                <input type="checkbox" checked={loop} onChange={(e) => setOne("loop")(e.target.checked)} />
                 Loop forever
               </label>
               <Button disabled={!!progress} onClick={() => run("gif")}>

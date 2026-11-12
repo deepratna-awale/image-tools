@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { baseName, createCanvas, downloadBlob, downloadZip, formatBytes, loadImage } from "@/lib/image-utils";
 import { EXPORT_FORMATS, ExportFormat, IMAGE_ACCEPT, encodeCanvas, formatInfo, sameFormat } from "@/lib/formats";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type FormatChoice = "original" | ExportFormat;
 type ResizeMode = "none" | "percent" | "fit";
@@ -83,14 +85,22 @@ async function encodeUnder(image: ImageBitmap, width: number, height: number, fo
 
 export default function ResizeConvertPage() {
   const [files, setFiles] = useState<File[]>([]);
-  const [format, setFormat] = useState<FormatChoice>("webp");
-  const [quality, setQuality] = useState(80);
-  const [useTarget, setUseTarget] = useState(false);
-  const [targetKb, setTargetKb] = useState(200);
-  const [resizeMode, setResizeMode] = useState<ResizeMode>("none");
-  const [percent, setPercent] = useState(50);
-  const [maxWidth, setMaxWidth] = useState(1920);
-  const [maxHeight, setMaxHeight] = useState(1080);
+  const history = useHistory({
+    format: "webp" as FormatChoice,
+    quality: 80,
+    useTarget: false,
+    targetKb: 200,
+    resizeMode: "none" as ResizeMode,
+    percent: 50,
+    maxWidth: 1920,
+    maxHeight: 1080,
+  });
+  const { format, quality, useTarget, targetKb, resizeMode, percent, maxWidth, maxHeight } = history.value;
+  type Options = typeof history.value;
+  const setOne =
+    <K extends keyof Options>(key: K) =>
+    (value: Options[K]) =>
+      history.set((current) => ({ ...current, [key]: value }), key);
   const [results, setResults] = useState<Converted[]>([]);
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState("");
@@ -145,6 +155,7 @@ export default function ResizeConvertPage() {
 
       <Card className="mt-8 w-full max-w-2xl mx-4">
         <CardContent className="p-6 flex flex-col gap-5">
+          <UndoRedo {...history} />
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Save as</span>
             <div className="flex flex-wrap gap-2">
@@ -153,7 +164,7 @@ export default function ResizeConvertPage() {
                   key={option.value}
                   size="sm"
                   variant={format === option.value ? "default" : "outline"}
-                  onClick={() => setFormat(option.value)}
+                  onClick={() => setOne("format")(option.value)}
                 >
                   {option.label}
                 </Button>
@@ -175,7 +186,7 @@ export default function ResizeConvertPage() {
                   key={value}
                   size="sm"
                   variant={resizeMode === value ? "default" : "outline"}
-                  onClick={() => setResizeMode(value)}
+                  onClick={() => setOne("resizeMode")(value)}
                 >
                   {label}
                 </Button>
@@ -189,7 +200,7 @@ export default function ResizeConvertPage() {
                   max={200}
                   step={5}
                   value={percent}
-                  onChange={(e) => setPercent(Number(e.target.value))}
+                  onChange={(e) => setOne("percent")(Number(e.target.value))}
                   className="flex-1"
                 />
                 <span className="w-12 text-right">{percent}%</span>
@@ -201,7 +212,7 @@ export default function ResizeConvertPage() {
                   type="number"
                   min={1}
                   value={maxWidth || ""}
-                  onChange={(e) => setMaxWidth(Number(e.target.value))}
+                  onChange={(e) => setOne("maxWidth")(Number(e.target.value))}
                   className={`${inputClass} w-28`}
                   aria-label="Max width"
                   placeholder="Width"
@@ -211,7 +222,7 @@ export default function ResizeConvertPage() {
                   type="number"
                   min={1}
                   value={maxHeight || ""}
-                  onChange={(e) => setMaxHeight(Number(e.target.value))}
+                  onChange={(e) => setOne("maxHeight")(Number(e.target.value))}
                   className={`${inputClass} w-28`}
                   aria-label="Max height"
                   placeholder="Height"
@@ -224,13 +235,13 @@ export default function ResizeConvertPage() {
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Compression</span>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={useTarget} onChange={(e) => setUseTarget(e.target.checked)} />
+              <input type="checkbox" checked={useTarget} onChange={(e) => setOne("useTarget")(e.target.checked)} />
               Make each file smaller than
               <input
                 type="number"
                 min={10}
                 value={targetKb || ""}
-                onChange={(e) => setTargetKb(Number(e.target.value))}
+                onChange={(e) => setOne("targetKb")(Number(e.target.value))}
                 disabled={!useTarget}
                 className={`${inputClass} w-24`}
                 aria-label="Target size in KB"
@@ -245,7 +256,7 @@ export default function ResizeConvertPage() {
                   min={10}
                   max={100}
                   value={quality}
-                  onChange={(e) => setQuality(Number(e.target.value))}
+                  onChange={(e) => setOne("quality")(Number(e.target.value))}
                   className="flex-1"
                 />
                 <span className="w-12 text-right">{quality}</span>

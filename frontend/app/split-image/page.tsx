@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExportFormat, IMAGE_ACCEPT, encodeCanvas, sameFormat } from "@/lib/formats";
 import { baseName, createCanvas, downloadZip } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 const PRESETS: { label: string; cols: number; rows: number; square: boolean; note: string }[] = [
   { label: "Instagram row (3 × 1)", cols: 3, rows: 1, square: true, note: "Post the tiles from last to first so they line up on your profile." },
@@ -23,10 +25,8 @@ const PRESETS: { label: string; cols: number; rows: number; square: boolean; not
 export default function SplitImagePage() {
   const [file, setFile] = useState<File | null>(null);
   const { bitmap, error: loadError } = useBitmap(file);
-  const [cols, setCols] = useState(3);
-  const [rows, setRows] = useState(1);
-  const [square, setSquare] = useState(true);
-  const [note, setNote] = useState(PRESETS[0].note);
+  const history = useHistory({ cols: 3, rows: 1, square: true, note: PRESETS[0].note });
+  const { cols, rows, square, note } = history.value;
   const [format, setFormat] = useState<"original" | ExportFormat>("original");
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -108,27 +108,23 @@ export default function SplitImagePage() {
           </Card>
           <Card>
             <CardContent className="p-5 flex flex-col gap-4">
+              <UndoRedo {...history} />
               <div className="flex flex-wrap gap-2">
                 {PRESETS.map((preset) => (
                   <Button
                     key={preset.label}
                     size="sm"
                     variant={cols === preset.cols && rows === preset.rows && square === preset.square ? "default" : "outline"}
-                    onClick={() => {
-                      setCols(preset.cols);
-                      setRows(preset.rows);
-                      setSquare(preset.square);
-                      setNote(preset.note);
-                    }}
+                    onClick={() => history.set({ cols: preset.cols, rows: preset.rows, square: preset.square, note: preset.note })}
                   >
                     {preset.label}
                   </Button>
                 ))}
               </div>
-              <Slider label="Columns" min={1} max={10} value={cols} onChange={(v) => { setCols(v); setNote(""); }} />
-              <Slider label="Rows" min={1} max={10} value={rows} onChange={(v) => { setRows(v); setNote(""); }} />
+              <Slider label="Columns" min={1} max={10} value={cols} onChange={(v) => history.set((current) => ({ ...current, cols: v, note: "" }), "cols")} />
+              <Slider label="Rows" min={1} max={10} value={rows} onChange={(v) => history.set((current) => ({ ...current, rows: v, note: "" }), "rows")} />
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={square} onChange={(e) => setSquare(e.target.checked)} />
+                <input type="checkbox" checked={square} onChange={(e) => history.set((current) => ({ ...current, square: e.target.checked }))} />
                 Square tiles (crops the edges to fit)
               </label>
               {note && <p className="text-xs text-muted-foreground">{note}</p>}

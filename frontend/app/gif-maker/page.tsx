@@ -10,6 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Frame, encodeGifAnimation } from "@/lib/gif";
 import { IMAGE_ACCEPT } from "@/lib/formats";
 import { createCanvas, downloadBlob, formatBytes, loadImage } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type Mode = "images" | "video";
 
@@ -38,17 +40,25 @@ function seek(video: HTMLVideoElement, time: number) {
 
 export default function GifMakerPage() {
   const [mode, setMode] = useState<Mode>("images");
-  const [images, setImages] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
   const [duration, setDuration] = useState(0);
-  const [start, setStart] = useState(0);
-  const [end, setEnd] = useState(5);
-  const [fps, setFps] = useState(10);
-  const [delay, setDelay] = useState(500);
-  const [width, setWidth] = useState(480);
-  const [loop, setLoop] = useState(true);
-  const [background, setBackground] = useState("#ffffff");
-  const [transparent, setTransparent] = useState(false);
+  const history = useHistory({
+    images: [] as File[],
+    start: 0,
+    end: 5,
+    fps: 10,
+    delay: 500,
+    width: 480,
+    loop: true,
+    background: "#ffffff",
+    transparent: false,
+  });
+  const { images, start, end, fps, delay, width, loop, background, transparent } = history.value;
+  type Settings = typeof history.value;
+  const setOne =
+    <K extends keyof Settings>(key: K) =>
+    (value: Settings[K]) =>
+      history.set((current) => ({ ...current, [key]: value }), key);
   const [result, setResult] = useState<Blob | null>(null);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
@@ -65,7 +75,7 @@ export default function GifMakerPage() {
     const next = [...images];
     const [item] = next.splice(i, 1);
     next.splice(Math.min(Math.max(0, i + by), next.length), 0, item);
-    setImages(next);
+    setOne("images")(next);
   };
 
   const fromImages = async (): Promise<Frame[]> => {
@@ -124,13 +134,14 @@ export default function GifMakerPage() {
 
       <Card className="w-full max-w-3xl mx-4">
         <CardContent className="p-6 flex flex-col gap-5">
+          <UndoRedo {...history} />
           {mode === "images" ? (
             <>
               <input
                 type="file"
                 multiple
                 accept={`image/*,${IMAGE_EXTENSIONS}`}
-                onChange={(e) => setImages([...images, ...Array.from(e.target.files ?? [])])}
+                onChange={(e) => setOne("images")([...images, ...Array.from(e.target.files ?? [])])}
                 className="text-sm"
               />
               {images.length > 0 && (
@@ -150,7 +161,7 @@ export default function GifMakerPage() {
                       </div>
                       <button
                         className="absolute -right-1 -top-1 rounded-full bg-background p-0.5 shadow"
-                        onClick={() => setImages(images.filter((_, j) => j !== i))}
+                        onClick={() => setOne("images")(images.filter((_, j) => j !== i))}
                         aria-label="Remove"
                       >
                         <X className="size-3" />
@@ -159,15 +170,15 @@ export default function GifMakerPage() {
                   ))}
                 </div>
               )}
-              <Slider label="Frame time" min={20} max={3000} step={10} unit=" ms" value={delay} onChange={setDelay} />
+              <Slider label="Frame time" min={20} max={3000} step={10} unit=" ms" value={delay} onChange={setOne("delay")} />
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={transparent} onChange={(e) => setTransparent(e.target.checked)} />
+                  <input type="checkbox" checked={transparent} onChange={(e) => setOne("transparent")(e.target.checked)} />
                   Keep transparency
                 </label>
                 {!transparent && (
                   <label className="flex items-center gap-2">
-                    Background <input type="color" value={background} onChange={(e) => setBackground(e.target.value)} />
+                    Background <input type="color" value={background} onChange={(e) => setOne("background")(e.target.value)} />
                   </label>
                 )}
               </div>
@@ -194,16 +205,15 @@ export default function GifMakerPage() {
                   onLoadedMetadata={(e) => {
                     const d = e.currentTarget.duration;
                     setDuration(d);
-                    setStart(0);
-                    setEnd(Math.min(d, 5));
+                    history.set((current) => ({ ...current, start: 0, end: Math.min(d, 5) }));
                   }}
                 />
               )}
               {duration > 0 && (
                 <>
-                  <Slider label="Start" min={0} max={Math.floor(duration * 10) / 10} step={0.1} unit=" s" value={start} onChange={(v) => setStart(Math.min(v, end - 0.1))} />
-                  <Slider label="End" min={0} max={Math.floor(duration * 10) / 10} step={0.1} unit=" s" value={end} onChange={(v) => setEnd(Math.max(v, start + 0.1))} />
-                  <Slider label="Frames/sec" min={2} max={30} value={fps} onChange={setFps} />
+                  <Slider label="Start" min={0} max={Math.floor(duration * 10) / 10} step={0.1} unit=" s" value={start} onChange={(v) => setOne("start")(Math.min(v, end - 0.1))} />
+                  <Slider label="End" min={0} max={Math.floor(duration * 10) / 10} step={0.1} unit=" s" value={end} onChange={(v) => setOne("end")(Math.max(v, start + 0.1))} />
+                  <Slider label="Frames/sec" min={2} max={30} value={fps} onChange={setOne("fps")} />
                   <p className="text-xs text-muted-foreground">
                     {estimatedFrames} frames{estimatedFrames > 600 ? " (only the first 600 are used; shorten the clip)" : ""}. Longer clips and more frames make bigger GIFs.
                   </p>
@@ -211,9 +221,9 @@ export default function GifMakerPage() {
               )}
             </>
           )}
-          <Slider label="Width" min={120} max={1200} step={10} unit=" px" value={width} onChange={setWidth} />
+          <Slider label="Width" min={120} max={1200} step={10} unit=" px" value={width} onChange={setOne("width")} />
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
+            <input type="checkbox" checked={loop} onChange={(e) => setOne("loop")(e.target.checked)} />
             Loop forever
           </label>
         </CardContent>

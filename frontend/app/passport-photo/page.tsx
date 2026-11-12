@@ -10,6 +10,8 @@ import { useCutout } from "../components/use-cutout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { baseName, canvasToBlob, createCanvas, downloadBlob, loadImage, setJpegDpi } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 const DPI = 300;
 
@@ -178,9 +180,9 @@ const sliderClass = "flex items-center gap-3 text-sm";
 export default function PassportPhotoPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [convertError, setConvertError] = useState("");
-  const [presetIndex, setPresetIndex] = useState(0);
-  const [background, setBackground] = useState(BACKGROUNDS[0].color);
-  const [adjust, setAdjust] = useState<Adjust>({ zoom: 1, x: 0, y: 0 });
+  const history = useHistory({ presetIndex: 0, background: BACKGROUNDS[0].color, adjust: { zoom: 1, x: 0, y: 0 } as Adjust });
+  const { presetIndex, background, adjust } = history.value;
+  const setAdjust = (next: Adjust, group?: string) => history.set((current) => ({ ...current, adjust: next }), group);
   const [subject, setSubject] = useState<{ image: ImageBitmap; head: Head } | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [saveAs, setSaveAs] = useState<ExportFormat>("jpg");
@@ -230,7 +232,7 @@ export default function PassportPhotoPage() {
   };
 
   const setSlider = (key: keyof Adjust) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setAdjust((current) => ({ ...current, [key]: Number(e.target.value) }));
+    history.set((current) => ({ ...current, adjust: { ...current.adjust, [key]: Number(e.target.value) } }), key);
 
   return (
     <div className="flex flex-col h-full w-full items-center justify-center pb-16">
@@ -245,7 +247,7 @@ export default function PassportPhotoPage() {
         onFilesChange={async (files) => {
           setPhoto(null);
           setSubject(null);
-          setAdjust({ zoom: 1, x: 0, y: 0 });
+          history.reset({ ...history.value, adjust: { zoom: 1, x: 0, y: 0 } });
           reset();
           setConvertError("");
           if (!files[0]) return;
@@ -261,11 +263,12 @@ export default function PassportPhotoPage() {
 
       <Card className="mt-8 w-full max-w-2xl mx-4">
         <CardContent className="p-6 flex flex-col gap-5">
+          <UndoRedo {...history} />
           <label className="flex flex-col gap-2 text-sm">
             <span className="font-medium">Document</span>
             <select
               value={presetIndex}
-              onChange={(e) => setPresetIndex(Number(e.target.value))}
+              onChange={(e) => history.set((current) => ({ ...current, presetIndex: Number(e.target.value) }))}
               className="h-9 rounded-md border bg-background px-3"
             >
               {PRESETS.map((option, i) => (
@@ -282,7 +285,7 @@ export default function PassportPhotoPage() {
                 <button
                   key={option.color}
                   type="button"
-                  onClick={() => setBackground(option.color)}
+                  onClick={() => history.set((current) => ({ ...current, background: option.color }))}
                   className={`flex items-center gap-2 rounded-full border-2 px-3 py-1 text-sm ${
                     background === option.color ? "border-primary" : "border-muted"
                   }`}

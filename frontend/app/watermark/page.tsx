@@ -17,6 +17,8 @@ import {
   downloadZip,
   loadImage,
 } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type Position = "tl" | "tc" | "tr" | "ml" | "mc" | "mr" | "bl" | "bc" | "br" | "tile";
 
@@ -129,7 +131,7 @@ export default function WatermarkPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveAs, setSaveAs] = useState<"original" | ExportFormat>("original");
   const [error, setError] = useState("");
-  const [settings, setSettings] = useState<Settings>({
+  const history = useHistory<Settings>({
     kind: "text",
     text: "© Your Name",
     font: FONTS[0].value,
@@ -140,7 +142,8 @@ export default function WatermarkPage() {
     opacity: 70,
     position: "br",
   });
-  const update = (change: Partial<Settings>) => setSettings((current) => ({ ...current, ...change }));
+  const settings = history.value;
+  const update = (change: Partial<Settings>) => history.set((current) => ({ ...current, ...change }), Object.keys(change).join());
 
   useEffect(() => {
     setPreview(null);
@@ -239,6 +242,7 @@ export default function WatermarkPage() {
 
         <Card className="order-1 md:order-2">
           <CardContent className="p-4 flex flex-col gap-4">
+            <UndoRedo {...history} />
             <div className="flex gap-2">
               {(["text", "logo"] as const).map((kind) => (
                 <Button key={kind} size="sm" variant={settings.kind === kind ? "default" : "outline"} onClick={() => update({ kind })}>

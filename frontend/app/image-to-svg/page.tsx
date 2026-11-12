@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IMAGE_ACCEPT } from "@/lib/formats";
 import { baseName, downloadBlob, formatBytes } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type Style = "logo" | "illustration" | "photo" | "bw";
 
@@ -33,11 +35,9 @@ function threshold(image: ImageData, cutoff: number) {
 export default function ImageToSvgPage() {
   const [file, setFile] = useState<File | null>(null);
   const { bitmap, error: loadError } = useBitmap(file);
-  const [style, setStyle] = useState<Style>("logo");
-  const [colors, setColors] = useState(6);
-  const [detail, setDetail] = useState(70);
-  const [smooth, setSmooth] = useState(0);
-  const [cutoff, setCutoff] = useState(128);
+  const history = useHistory({ style: "logo" as Style, colors: 6, detail: 70, smooth: 0, cutoff: 128 });
+  const { style, colors, detail, smooth, cutoff } = history.value;
+  const setOne = (key: "colors" | "detail" | "smooth" | "cutoff") => (value: number) => history.set((current) => ({ ...current, [key]: value }), key);
   const [svg, setSvg] = useState("");
   const [svgUrl, setSvgUrl] = useState("");
   const [isWorking, setIsWorking] = useState(false);
@@ -49,10 +49,7 @@ export default function ImageToSvgPage() {
 
   const pickStyle = (id: Style) => {
     const preset = STYLES.find((s) => s.id === id)!;
-    setStyle(id);
-    setColors(preset.colors);
-    setDetail(preset.detail);
-    setSmooth(preset.smooth);
+    history.set((current) => ({ ...current, style: id, colors: preset.colors, detail: preset.detail, smooth: preset.smooth }));
   };
 
   const trace = async () => {
@@ -99,6 +96,7 @@ export default function ImageToSvgPage() {
 
       <Card className="mt-8 w-full max-w-2xl mx-4">
         <CardContent className="p-6 flex flex-col gap-4">
+          <UndoRedo {...history} />
           <div className="flex flex-wrap gap-2">
             {STYLES.map((option) => (
               <Button key={option.id} size="sm" variant={style === option.id ? "default" : "outline"} onClick={() => pickStyle(option.id)}>
@@ -107,12 +105,12 @@ export default function ImageToSvgPage() {
             ))}
           </div>
           {style === "bw" ? (
-            <Slider label="Threshold" min={20} max={235} value={cutoff} onChange={setCutoff} />
+            <Slider label="Threshold" min={20} max={235} value={cutoff} onChange={setOne("cutoff")} />
           ) : (
-            <Slider label="Colours" min={2} max={64} value={colors} onChange={setColors} />
+            <Slider label="Colours" min={2} max={64} value={colors} onChange={setOne("colors")} />
           )}
-          <Slider label="Detail" min={0} max={100} value={detail} onChange={setDetail} />
-          <Slider label="Smoothing" min={0} max={5} value={smooth} onChange={setSmooth} />
+          <Slider label="Detail" min={0} max={100} value={detail} onChange={setOne("detail")} />
+          <Slider label="Smoothing" min={0} max={5} value={smooth} onChange={setOne("smooth")} />
         </CardContent>
       </Card>
 

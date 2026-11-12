@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExportFormat, IMAGE_ACCEPT, encodeCanvas, sameFormat } from "@/lib/formats";
 import { baseName, createCanvas, downloadBlob, downloadZip, drawBlurred, loadImage } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type FormatChoice = "auto" | ExportFormat;
 
@@ -103,7 +105,7 @@ const usesTransparency = (s: Settings) => s.radius > 0 || s.circle || s.shadow;
 export default function BorderPage() {
   const [files, setFiles] = useState<File[]>([]);
   const { bitmap, error: loadError } = useBitmap(files[0]);
-  const [settings, setSettings] = useState<Settings>({
+  const history = useHistory<Settings>({
     padRatio: 0,
     padFill: "color",
     padColor: "#ffffff",
@@ -113,12 +115,13 @@ export default function BorderPage() {
     circle: false,
     shadow: false,
   });
+  const settings = history.value;
   const [format, setFormat] = useState<FormatChoice>("auto");
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const update = (patch: Partial<Settings>) => setSettings((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<Settings>) => history.set((current) => ({ ...current, ...patch }), Object.keys(patch).join());
 
   useEffect(() => {
     if (!bitmap || !canvasRef.current) return;
@@ -182,6 +185,7 @@ export default function BorderPage() {
 
           <Card>
             <CardContent className="p-5 flex flex-col gap-5">
+              <UndoRedo {...history} />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Pad to shape (no cropping)</span>
                 <div className="flex flex-wrap gap-2">

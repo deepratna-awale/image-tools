@@ -8,6 +8,8 @@ import FormatSelect from "../components/format-select";
 import Slider from "../components/slider";
 import SaveButton from "../components/save-button";
 import { previewCanvas, useBitmap } from "../components/use-bitmap";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExportFormat, IMAGE_ACCEPT, encodeCanvas, sameFormat } from "@/lib/formats";
@@ -144,15 +146,27 @@ const HANDLES: { handle: Handle; className: string }[] = [
   { handle: "e", className: "top-1/2 -translate-y-1/2 -right-2 cursor-ew-resize" },
 ];
 
+interface Edit {
+  quarter: number;
+  angle: number;
+  flipH: boolean;
+  flipV: boolean;
+  shape: Shape;
+  crop: Rect;
+}
+
+const START: Edit = { quarter: 0, angle: 0, flipH: false, flipV: false, shape: SHAPES[0], crop: { x: 0, y: 0, w: 0, h: 0 } };
+
+/** Width / height the crop box keeps: null for "Free", the photo's own shape for "Original" */
+function ratioOf(shape: Shape, quarter: number, bitmap: ImageBitmap | null) {
+  return shape.ratio === 0 && bitmap ? (quarter % 2 ? bitmap.height / bitmap.width : bitmap.width / bitmap.height) : shape.ratio;
+}
+
 export default function CropRotatePage() {
   const [file, setFile] = useState<File | null>(null);
   const { bitmap, error: loadError } = useBitmap(file);
-  const [quarter, setQuarter] = useState(0);
-  const [angle, setAngle] = useState(0);
-  const [flipH, setFlipH] = useState(false);
-  const [flipV, setFlipV] = useState(false);
-  const [shape, setShape] = useState<Shape>(SHAPES[0]);
-  const [crop, setCrop] = useState<Rect>({ x: 0, y: 0, w: 0, h: 0 });
+  const history = useHistory<Edit>(START);
+  const { quarter, angle, flipH, flipV, shape, crop } = history.value;
   const [format, setFormat] = useState<FormatChoice>("original");
   const [error, setError] = useState("");
   const [isWorking, setIsWorking] = useState(false);
@@ -162,7 +176,17 @@ export default function CropRotatePage() {
   const small = useMemo(() => (bitmap ? previewCanvas(bitmap, 1200).canvas : null), [bitmap]);
   const degrees = quarter * 90 + angle;
   const full = bitmap ? rotatedSize(bitmap.width, bitmap.height, degrees) : { width: 1, height: 1 };
-  const ratio = shape.ratio === 0 && bitmap ? (quarter % 2 ? bitmap.height / bitmap.width : bitmap.width / bitmap.height) : shape.ratio;
+  const ratio = ratioOf(shape, quarter, bitmap);
+
+  // A new crop box that fits the rotated photo and the chosen shape
+  const withCrop = (edit: Edit): Edit => {
+    if (!bitmap) return edit;
+    const size = rotatedSize(bitmap.width, bitmap.height, edit.quarter * 90 + edit.angle);
+    const bounds = edit.angle ? innerRect(bitmap.width, bitmap.height, edit.quarter, edit.angle) : { x: 0, y: 0, w: size.width, h: size.height };
+    const r = ratioOf(edit.shape, edit.quarter, bitmap);
+    return { ...edit, crop: r ? fitRatio(bounds, r) : bounds };
+  };
+  const change = (patch: Partial<Edit>, group?: string) => history.set((edit) => withCrop({ ...edit, ...patch }), group);
 
   // Draw the rotated preview
   useEffect(() => {
@@ -174,13 +198,11 @@ export default function CropRotatePage() {
     canvas.getContext("2d")!.drawImage(turned, 0, 0);
   }, [small, degrees, flipH, flipV]);
 
-  // Reset the crop when the photo, rotation or shape changes
+  // A new photo starts with the whole image selected and nothing to undo
   useEffect(() => {
-    if (!bitmap) return;
-    const bounds = angle ? innerRect(bitmap.width, bitmap.height, quarter, angle) : { x: 0, y: 0, w: full.width, h: full.height };
-    setCrop(ratio ? fitRatio(bounds, ratio) : bounds);
+    if (bitmap) history.reset({ ...START, crop: { x: 0, y: 0, w: bitmap.width, h: bitmap.height } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bitmap, quarter, angle, ratio]);
+  }, [bitmap]);
 
   const toImage = (clientX: number, clientY: number) => {
     const box = canvasRef.current!.getBoundingClientRect();
@@ -199,7 +221,8 @@ export default function CropRotatePage() {
     if (!drag.current) return;
     const point = toImage(e.clientX, e.clientY);
     const { handle, startX, startY, start } = drag.current;
-    setCrop(dragRect(start, handle, point.x - startX, point.y - startY, ratio, full.width, full.height));
+    const next = dragRect(start, handle, point.x - startX, point.y - startY, ratio, full.width, full.height);
+    history.set((edit) => ({ ...edit, crop: next }), "crop");
   };
 
   const save = async () => {
@@ -279,23 +302,24 @@ export default function CropRotatePage() {
 
           <Card>
             <CardContent className="p-5 flex flex-col gap-5">
+              <UndoRedo {...history} />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Rotate & flip</span>
                 <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setQuarter((quarter + 3) % 4)} aria-label="Rotate left">
+                  <Button size="sm" variant="outline" onClick={() => change({ quarter: (quarter + 3) % 4 })} aria-label="Rotate left">
                     <RotateCcw className="size-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setQuarter((quarter + 1) % 4)} aria-label="Rotate right">
+                  <Button size="sm" variant="outline" onClick={() => change({ quarter: (quarter + 1) % 4 })} aria-label="Rotate right">
                     <RotateCw className="size-4" />
                   </Button>
-                  <Button size="sm" variant={flipH ? "default" : "outline"} onClick={() => setFlipH(!flipH)} aria-label="Flip horizontally">
+                  <Button size="sm" variant={flipH ? "default" : "outline"} onClick={() => history.set((edit) => ({ ...edit, flipH: !edit.flipH }))} aria-label="Flip horizontally">
                     <FlipHorizontal2 className="size-4" />
                   </Button>
-                  <Button size="sm" variant={flipV ? "default" : "outline"} onClick={() => setFlipV(!flipV)} aria-label="Flip vertically">
+                  <Button size="sm" variant={flipV ? "default" : "outline"} onClick={() => history.set((edit) => ({ ...edit, flipV: !edit.flipV }))} aria-label="Flip vertically">
                     <FlipVertical2 className="size-4" />
                   </Button>
                 </div>
-                <Slider label="Straighten" min={-45} max={45} step={0.5} unit="°" value={angle} onChange={setAngle} />
+                <Slider label="Straighten" min={-45} max={45} step={0.5} unit="°" value={angle} onChange={(value) => change({ angle: value }, "angle")} />
               </div>
 
               <div className="flex flex-col gap-2">
@@ -306,7 +330,7 @@ export default function CropRotatePage() {
                       key={option.label}
                       size="sm"
                       variant={shape === option ? "default" : "outline"}
-                      onClick={() => setShape(option)}
+                      onClick={() => change({ shape: option })}
                     >
                       {option.label}
                     </Button>
@@ -319,7 +343,7 @@ export default function CropRotatePage() {
                 <select
                   className="h-9 rounded-md border bg-background px-2 text-sm"
                   value={shape.size ? shape.label : ""}
-                  onChange={(e) => setShape(SOCIAL.find((option) => option.label === e.target.value) ?? SHAPES[0])}
+                  onChange={(e) => change({ shape: SOCIAL.find((option) => option.label === e.target.value) ?? SHAPES[0] })}
                 >
                   <option value="">Choose a size...</option>
                   {SOCIAL.map((option) => (
@@ -332,17 +356,7 @@ export default function CropRotatePage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t">
                 <FormatSelect value={format} onChange={setFormat} extra={[{ value: "original", label: "Same as original" }]} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setQuarter(0);
-                    setAngle(0);
-                    setFlipH(false);
-                    setFlipV(false);
-                    setShape(SHAPES[0]);
-                  }}
-                >
+                <Button size="sm" variant="ghost" onClick={() => history.set(withCrop(START))}>
                   Reset
                 </Button>
               </div>

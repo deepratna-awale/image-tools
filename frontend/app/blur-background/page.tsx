@@ -9,12 +9,15 @@ import ToolResult from "../components/tool-result";
 import { useCutout } from "../components/use-cutout";
 import { Button } from "@/components/ui/button";
 import { baseName, canvasToBlob, createCanvas, downloadBlob, drawBlurred, loadImage } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 export default function BlurBackgroundPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [convertError, setConvertError] = useState("");
   // Blur as a share of the image's longer side, so it looks the same at any resolution
-  const [strength, setStrength] = useState(12);
+  const history = useHistory(12);
+  const strength = history.value;
   const [resultUrl, setResultUrl] = useState("");
   const [saveAs, setSaveAs] = useState<ExportFormat>("jpg");
   const result = useRef<HTMLCanvasElement | null>(null);
@@ -88,10 +91,11 @@ export default function BlurBackgroundPage() {
           min={2}
           max={40}
           value={strength}
-          onChange={(e) => setStrength(Number(e.target.value))}
+          onChange={(e) => history.set(Number(e.target.value), "strength")}
           className="flex-1"
         />
         <span className="w-8 text-right">{strength}</span>
+        <UndoRedo {...history} />
       </label>
 
       <Button className="mt-6" disabled={!photo || isProcessing || !!cutout} onClick={() => photo && run(photo)}>

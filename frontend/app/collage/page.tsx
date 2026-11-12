@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExportFormat, IMAGE_ACCEPT, encodeCanvas } from "@/lib/formats";
 import { createCanvas, downloadBlob, loadImage } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type Mode = "grid" | "horizontal" | "vertical";
 /** Cells as [x, y, w, h] fractions of the canvas */
@@ -97,17 +99,21 @@ function render(images: ImageBitmap[], o: Options, scale = 1) {
 }
 
 export default function CollagePage() {
-  const [files, setFiles] = useState<File[]>([]);
   const [images, setImages] = useState<ImageBitmap[]>([]);
-  const [options, setOptions] = useState<Options>({
-    mode: "grid",
-    layout: LAYOUTS[5],
-    ratio: 1,
-    size: 2048,
-    gap: 16,
-    radius: 0,
-    background: "#ffffff",
+  const history = useHistory<{ files: File[]; options: Options }>({
+    files: [],
+    options: {
+      mode: "grid",
+      layout: LAYOUTS[5],
+      ratio: 1,
+      size: 2048,
+      gap: 16,
+      radius: 0,
+      background: "#ffffff",
+    },
   });
+  const { files, options } = history.value;
+  const setFiles = (next: File[]) => history.set((current) => ({ ...current, files: next }));
   const [format, setFormat] = useState<ExportFormat>("jpg");
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -124,7 +130,7 @@ export default function CollagePage() {
     };
   }, [files]);
 
-  const update = (patch: Partial<Options>) => setOptions((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<Options>) => history.set((current) => ({ ...current, options: { ...current.options, ...patch } }), Object.keys(patch).join());
 
   useEffect(() => {
     if (!images.length || !canvasRef.current) return;
@@ -169,6 +175,7 @@ export default function CollagePage() {
 
       <Card className="w-full max-w-3xl mx-4">
         <CardContent className="p-5 flex flex-col gap-3">
+          <UndoRedo {...history} />
           <input
             type="file"
             multiple

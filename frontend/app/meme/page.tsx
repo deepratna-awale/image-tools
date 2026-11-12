@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExportFormat, IMAGE_ACCEPT, encodeCanvas } from "@/lib/formats";
 import { createCanvas, downloadBlob } from "@/lib/image-utils";
+import UndoRedo from "../components/undo-redo";
+import { useHistory } from "../components/use-history";
 
 type Style = "classic" | "caption";
 
@@ -97,11 +99,12 @@ function render(image: ImageBitmap, meme: Meme, maxSide?: number) {
 export default function MemePage() {
   const [file, setFile] = useState<File | null>(null);
   const { bitmap, error: loadError } = useBitmap(file);
-  const [meme, setMeme] = useState<Meme>({ style: "classic", top: "", bottom: "", size: 10, uppercase: true, color: "#ffffff" });
+  const history = useHistory<Meme>({ style: "classic", top: "", bottom: "", size: 10, uppercase: true, color: "#ffffff" });
+  const meme = history.value;
   const [format, setFormat] = useState<ExportFormat>("jpg");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fontReady, setFontReady] = useState(false);
-  const update = (patch: Partial<Meme>) => setMeme((current) => ({ ...current, ...patch }));
+  const update = (patch: Partial<Meme>) => history.set((current) => ({ ...current, ...patch }), Object.keys(patch).join());
 
   useEffect(() => {
     document.fonts.load(`40px ${anton.style.fontFamily}`).finally(() => setFontReady(true));
@@ -131,6 +134,7 @@ export default function MemePage() {
           </Card>
           <Card>
             <CardContent className="p-5 flex flex-col gap-4">
+              <UndoRedo {...history} />
               <div className="flex gap-2">
                 <Button size="sm" variant={meme.style === "classic" ? "default" : "outline"} onClick={() => update({ style: "classic", size: 10, uppercase: true })}>
                   Top & bottom
